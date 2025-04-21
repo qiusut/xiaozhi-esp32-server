@@ -15,7 +15,7 @@ getCustomerDeviceInfos = "api/customer/{customer_id}/deviceInfos"
 
 
 def append_devices_to_prompt(conn):
-    device_id = conn.headers.get("device-id", "00:11:22:33:44:55")
+    device_id = conn.headers.get("device-id", "")
     if device_id and conn.use_function_call_mode:
         init_tb_token(device_id) #初始化token
         tbuser = getTbUser(device_id)
@@ -54,7 +54,7 @@ def append_devices_to_prompt(conn):
         conn.dialogue.update_system_message(conn.prompt)
 
         return tb_device_list
-
+    return None
 
 
 def initialize_tb_handler(conn):

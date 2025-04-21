@@ -42,7 +42,7 @@ def tb_device(conn,function_name: str,param_dict: dict):
 
 
 async def handle_tb_device(conn,function_name,param_dict):
-    device_id = conn.headers.get("device-id", "00:11:22:33:44:55")
+    device_id = conn.headers.get("device-id", "")
     tb_url = redisClient.get('tb:url')
     tb_token = init_tb_token(device_id)
     control_device_dict = redisClient.hgetall(f"tb:{device_id}:control_device")
