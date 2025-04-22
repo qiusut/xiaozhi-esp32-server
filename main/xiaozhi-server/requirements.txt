@@ -25,5 +25,5 @@ sherpa_onnx==1.11.0
 mcp==1.4.1
 cnlunar==0.2.0
 PySocks==1.7.1
-dashscope>=1.22.2
+dashscope==1.23.1
 redis>=5.2.1
