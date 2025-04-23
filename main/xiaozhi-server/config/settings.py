@@ -82,6 +82,8 @@ class RedisPool:
         print(f"\n============redis初始化{conn.connection_pool}============")
         if conn.ping():
             if not conn.get("aes"):
+                # 关闭连接池
+                self.pool.disconnect()
                 raise ValueError("============管理端aes异常============")
             return conn
 
