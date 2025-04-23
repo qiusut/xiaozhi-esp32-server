@@ -70,6 +70,11 @@ def get_config_from_api(config):
         "secret": config["manager-api"].get("secret", ""),
     }
     config_data["redis"] = config["redis"]
+    if config.get("server"):
+        config_data["server"] = {
+            "ip": config["server"].get("ip", ""),
+            "port": config["server"].get("port", ""),
+        }
     return config_data
 
 
