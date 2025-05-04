@@ -486,6 +486,7 @@ def analyze_emotion(text):
 
     return top_emotions[0]  # 如果都不在优先级列表里，返回第一个
 
+
 def find_json(s):
     # 找到第一个 '{' 的位置
     start_index = s.find('{')
