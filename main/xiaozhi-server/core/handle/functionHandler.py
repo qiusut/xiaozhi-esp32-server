@@ -56,6 +56,10 @@ class FunctionHandler:
         self.function_registry.register_function("get_time")
         self.function_registry.register_function("get_lunar")
         self.function_registry.register_function("handle_device")
+        device_id = self.conn.headers.get("device-id", "")
+        switch = redisClient.get(f"recipe:{device_id}:switch")
+        if switch == "1":
+            self.function_registry.register_function("recipe_device")
 
     def register_config_functions(self):
         """注册配置中的函数,可以不同客户端使用不同的配置"""
