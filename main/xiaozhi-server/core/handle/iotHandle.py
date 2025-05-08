@@ -1,6 +1,7 @@
 import json
 import asyncio
 from config.logger import setup_logging
+from config.settings import redisClient
 from plugins_func.register import (
     device_type_registry,
     register_function,
@@ -288,6 +289,10 @@ async def handleIotDescriptors(conn, descriptors):
     """处理物联网描述"""
     functions_changed = False
 
+    #先删除旧的描述
+    redis_key = f"device:{conn.device_id.replace(':', '-')}:iot_desc"
+    redisClient.delete(redis_key)
+
     for descriptor in descriptors:
 
         # 如果descriptor没有properties和methods，则直接跳过
@@ -316,6 +321,9 @@ async def handleIotDescriptors(conn, descriptors):
             descriptor["methods"],
         )
         conn.iot_descriptors[descriptor["name"]] = iot_descriptor
+
+        #添加新的描述
+        redisClient.hset(redis_key, descriptor["name"], json.dumps(descriptor))
 
         if conn.use_function_call_mode:
             # 注册或获取设备类型

@@ -4,6 +4,7 @@ from config.logger import setup_logging
 from core.connection import ConnectionHandler
 from core.utils.util import initialize_modules, check_vad_update, check_asr_update
 from config.config_loader import get_config_from_api
+from aiohttp import web
 
 TAG = __name__
 
@@ -36,10 +37,21 @@ class WebSocketServer:
         host = server_config.get("ip", "0.0.0.0")
         port = int(server_config.get("port", 8000))
 
-        async with websockets.serve(
-            self._handle_connection, host, port, process_request=self._http_response
-        ):
-            await asyncio.Future()
+        #async with websockets.serve(self._handle_connection, host, port, process_request=self._http_response):
+        #    await asyncio.Future()
+
+        # 创建两个服务任务
+        ws_task = websockets.serve(
+            self._handle_connection,
+            host,
+            port,
+            process_request=self._http_response
+        )
+
+        http_task = self.httpApi()
+
+        # 并行运行两个服务
+        await asyncio.gather(ws_task, http_task)
 
     async def _handle_connection(self, websocket):
         """处理新连接，每次创建独立的ConnectionHandler"""
@@ -119,3 +131,84 @@ class WebSocketServer:
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"更新服务器配置失败: {str(e)}")
             return False
+
+    async def httpApi(self):
+        server_config = self.config["server"]
+        host = server_config.get("ip", "0.0.0.0")
+        port = int(server_config.get("http_port"))
+
+        if port:
+            app = web.Application()
+            # 添加路由
+            app.add_routes(
+                [
+                    web.post("/xiaozhi/websocket", self.send_websocket),
+                ]
+            )
+
+            # 运行服务
+            runner = web.AppRunner(app)
+            await runner.setup()
+            site = web.TCPSite(runner, host, port)
+            await site.start()
+
+            await asyncio. Future()
+
+    async def send_websocket(self, request):
+        status = 200
+        message = "OK"
+        found = False
+
+        # CORS headers（建议提取为类常量以复用）
+        cors_headers = {
+            #"Access-Control-Allow-Headers": "client-id, content-type, device-id",
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Origin": "*"
+        }
+
+        try:
+            # 获取请求参数
+            device_mac = request.headers.get("device_mac", "").strip()
+            body = await request.text()
+
+            # 输入校验
+            if not device_mac or not body:
+                status = 400
+                message = "Missing device_mac or body"
+            else:
+                # 遍历连接集合查找目标设备
+                for handler in self.active_connections:
+                    if handler.device_id == device_mac:
+                        try:
+                            # 发送消息并记录日志
+                            await handler.websocket.send(body)
+                            self.logger.bind(tag=TAG).info(f"http推送websocket消息: {body}")
+                            message = "发送成功"
+                            found = True
+                        except websockets.exceptions.ConnectionClosed as e:
+                            self.logger.bind(tag=TAG).error(f"WebSocket连接已关闭: {e}")
+                            status = 503
+                            message = f"WebSocket连接已断开: {e}"
+                        except Exception as e:
+                            self.logger.bind(tag=TAG).error(f"发送消息异常: {e}")
+                            status = 500
+                            message = f"内部错误: {e}"
+                        break
+
+                if not found:
+                    status = 500
+                    message = "Device not connected"
+
+        except asyncio.CancelledError:
+            self.logger.bind(tag=TAG).warning("请求被取消")
+            status = 503
+            message = "Request was cancelled"
+        except Exception as e:
+            self.logger.bind(tag=TAG).error(f"处理WebSocket推送异常: {e}")
+            status = 500
+            message = f"服务器异常: {e}"
+
+        # 构造响应并设置CORS头部
+        response = web.Response(text=message, content_type="text/plain", status=status)
+        response.headers.update(cors_headers)
+        return response
