@@ -30,6 +30,9 @@ import xiaozhi.common.service.impl.BaseServiceImpl;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.common.utils.DateUtils;
+import xiaozhi.modules.agent.dao.AgentDao;
+import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.dto.DevicePageUserDTO;
 import xiaozhi.modules.device.dto.DeviceReportReqDTO;
@@ -53,6 +56,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
     private final SysParamsService sysParamsService;
     private final RedisUtils redisUtils;
     private final OtaService otaService;
+    private final AgentDao agentDao;
 
     @Override
     public Boolean deviceActivation(String agentId, String activationCode) {
@@ -107,6 +111,10 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         // 清理redis缓存
         redisUtils.delete(cacheDeviceKey);
         redisUtils.delete(deviceKey);
+
+        AgentEntity agentEntity = agentDao.selectById(agentId);
+        //菜谱
+        redisUtils.set("device:"+macAddress.replace(":","-")+":recipe_switch", agentEntity.getIsRecipe());
         return true;
     }
 

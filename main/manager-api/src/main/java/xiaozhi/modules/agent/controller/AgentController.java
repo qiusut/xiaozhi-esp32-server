@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import cn.hutool.core.util.NumberUtil;
+import cn.hutool.core.util.ObjectUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.http.HttpHeaders;
@@ -175,6 +177,8 @@ public class AgentController {
         if (dto.getSort() != null) {
             existingEntity.setSort(dto.getSort());
         }
+
+        existingEntity.setIsRecipe(ObjectUtil.defaultIfNull(dto.getIsRecipe(), 0));
 
         // 设置更新者信息
         UserDetail user = SecurityUser.getUser();

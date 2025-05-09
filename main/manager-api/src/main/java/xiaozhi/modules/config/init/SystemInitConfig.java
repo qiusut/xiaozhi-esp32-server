@@ -9,6 +9,7 @@ import xiaozhi.common.constant.Constant;
 import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.modules.config.service.ConfigService;
+import xiaozhi.modules.recipe.service.RecInfoService;
 import xiaozhi.modules.sys.service.SysParamsService;
 
 @Configuration
@@ -20,6 +21,9 @@ public class SystemInitConfig {
 
     @Autowired
     private ConfigService configService;
+
+    @Autowired
+    private RecInfoService recInfoService;
 
     @Autowired
     private RedisUtils redisUtils;
@@ -37,5 +41,7 @@ public class SystemInitConfig {
 
         sysParamsService.initServerSecret();
         configService.getConfig(false);
+        recInfoService.initRedis();
+        System.out.println("初始化完成");
     }
 }

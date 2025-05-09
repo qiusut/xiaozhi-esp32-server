@@ -20,6 +20,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("device")
                 .pathsToMatch("/device/**")
+                .displayName("设备")
                 .build();
     }
 
@@ -28,6 +29,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("agent")
                 .pathsToMatch("/agent/**")
+                .displayName("智能体")
                 .build();
     }
 
@@ -36,6 +38,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("models")
                 .pathsToMatch("/models/**")
+                .displayName("模型")
                 .build();
     }
 
@@ -44,6 +47,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("ota")
                 .pathsToMatch("/ota/**")
+                .displayName("OTA")
                 .build();
     }
 
@@ -52,6 +56,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("timbre")
                 .pathsToMatch("/ttsVoice/**")
+                .displayName("音色")
                 .build();
     }
 
@@ -60,6 +65,25 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("admin")
                 .pathsToMatch("/admin/**")
+                .displayName("管理")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi tbApi() {
+        return GroupedOpenApi.builder()
+                .group("tb")
+                .pathsToMatch("/tb/**")
+                .displayName("物联网")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi recipeApi() {
+        return GroupedOpenApi.builder()
+                .group("recipe")
+                .pathsToMatch("/recipe/**")
+                .displayName("菜谱")
                 .build();
     }
 
@@ -68,6 +92,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("user")
                 .pathsToMatch("/user/**")
+                .displayName("用户")
                 .build();
     }
 
@@ -76,6 +101,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("config")
                 .pathsToMatch("/config/**")
+                .displayName("参数")
                 .build();
     }
 

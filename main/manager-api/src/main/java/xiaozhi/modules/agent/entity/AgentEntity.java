@@ -57,6 +57,9 @@ public class AgentEntity {
     @Schema(description = "交互语种")
     private String language;
 
+    @Schema(description = "是否开启烹饪功能,0:否,1:是")
+    private Integer isRecipe;
+
     @Schema(description = "排序")
     private Integer sort;
 

@@ -51,6 +51,9 @@ public class AgentUpdateDTO implements Serializable {
     @Schema(description = "交互语种", example = "中文", required = false)
     private String language;
 
+    @Schema(description = "是否开启烹饪功能,0:否,1:是", required = false)
+    private Integer isRecipe;
+
     @Schema(description = "排序", example = "1", required = false)
     private Integer sort;
 }
