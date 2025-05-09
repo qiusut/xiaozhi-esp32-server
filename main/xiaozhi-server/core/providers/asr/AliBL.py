@@ -19,29 +19,22 @@ sample_rate = 16000
 
 class ASRProvider(ASRProviderBase):
     def __init__(self, config: dict, delete_audio_file: bool):
+        super().__init__()
         self.model = config.get("model")
         self.output_dir = config.get("output_dir")
         self.seg_duration = 12800
+        self.delete_audio_file = delete_audio_file
 
         dashscope.api_key = config.get("api_key")
 
         # 确保输出目录存在
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def save_audio_to_file(self, opus_data: List[bytes], session_id: str) -> str:
+    def save_audio_to_file(self, pcm_data: List[bytes], session_id: str) -> str:
         """将Opus音频数据解码并保存为WAV文件"""
-        file_name = f"asr_{session_id}_{uuid.uuid4()}.wav"
+        module_name = __name__.split(".")[-1]
+        file_name = f"asr_{module_name}_{session_id}_{uuid.uuid4()}.wav"
         file_path = os.path.join(self.output_dir, file_name)
-
-        decoder = opuslib_next.Decoder(sample_rate, 1)  # 16kHz, 单声道
-        pcm_data = []
-
-        for opus_packet in opus_data:
-            try:
-                pcm_frame = decoder.decode(opus_packet, 960)  # 960 samples = 60ms
-                pcm_data.append(pcm_frame)
-            except opuslib_next.OpusError as e:
-                logger.bind(tag=TAG).error(f"Opus解码错误: {e}", exc_info=True)
 
         with wave.open(file_path, "wb") as wf:
             wf.setnchannels(1)
@@ -129,21 +122,6 @@ class ASRProvider(ASRProviderBase):
             return None
 
     @staticmethod
-    def decode_opus(opus_data: List[bytes], session_id: str) -> List[bytes]:
-
-        decoder = opuslib_next.Decoder(sample_rate, 1)  # 16kHz, 单声道
-        pcm_data = []
-
-        for opus_packet in opus_data:
-            try:
-                pcm_frame = decoder.decode(opus_packet, 960)  # 960 samples = 60ms
-                pcm_data.append(pcm_frame)
-            except opuslib_next.OpusError as e:
-                logger.bind(tag=TAG).error(f"Opus解码错误: {e}", exc_info=True)
-
-        return pcm_data
-
-    @staticmethod
     def read_wav_info(data: io.BytesIO = None) -> (int, int, int, int, int):
         with io.BytesIO(data) as _f:
             wave_fp = wave.open(_f, 'rb')
@@ -167,46 +145,52 @@ class ASRProvider(ASRProviderBase):
         else:
             yield data[offset: data_len], True
 
-    async def speech_to_text(self, opus_data: List[bytes], session_id: str) -> Tuple[Optional[str], Optional[str]]:
+    async def speech_to_text(
+            self, opus_data: List[bytes], session_id: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         """将语音数据转换为文本"""
+
+        file_path = None
         try:
             # 合并所有opus数据包
-            pcm_data = self.decode_opus(opus_data, session_id)
+            if self.audio_format == "pcm":
+                pcm_data = opus_data
+            else:
+                pcm_data = self.decode_opus(opus_data)
             combined_pcm_data = b''.join(pcm_data)
 
-            wav_buffer = io.BytesIO()
+            # 判断是否保存为WAV文件
+            if self.delete_audio_file:
+                pass
+            else:
+                file_path = self.save_audio_to_file(pcm_data, session_id)
 
-            with wave.open(wav_buffer, "wb") as wav_file:
-                wav_file.setnchannels(1)  # 设置声道数
-                wav_file.setsampwidth(2)  # 设置采样宽度
-                wav_file.setframerate(sample_rate)  # 设置采样率
-                wav_file.writeframes(combined_pcm_data)  # 写入 PCM 数据
-
-            # 获取封装后的 WAV 数据
-            wav_data = wav_buffer.getvalue()
-            nchannels, sampwidth, framerate, nframes, wav_len = self.read_wav_info(wav_data)
-            size_per_sec = nchannels * sampwidth * framerate
+            # 直接使用PCM数据
+            # 计算分段大小 (单声道, 16bit, 16kHz采样率)
+            size_per_sec = 1 * 2 * 16000  # nchannels * sampwidth * framerate
             segment_size = int(size_per_sec * self.seg_duration / 1000)
 
             # 语音识别
             start_time = time.time()
 
             if "paraformer" in self.model:
-                text = await self._send_request_paraformer(wav_data, segment_size)
+                text = await self._send_request_paraformer(combined_pcm_data, segment_size)
             elif "gummy" in self.model:
-                text = await self._send_request_gummy(wav_data, segment_size)
+                text = await self._send_request_gummy(combined_pcm_data, segment_size)
             else:
                 logger.bind(tag=TAG).error(f"语音识别模型不支持: {self.model}", exc_info=True)
                 return "", None
             #text = await self._send_request(wav_data, segment_size)
             if text:
-                logger.bind(tag=TAG).debug(f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}")
-                return text, None
-            return "", None
+                logger.bind(tag=TAG).debug(
+                    f"语音识别耗时: {time.time() - start_time:.3f}s | 结果: {text}"
+                )
+                return text, file_path
+            return "", file_path
 
         except Exception as e:
             logger.bind(tag=TAG).error(f"语音识别失败: {e}", exc_info=True)
-            return "", None
+            return "", file_path
 
 
 class CallbackGummy(TranslationRecognizerCallback):
