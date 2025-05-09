@@ -323,7 +323,7 @@ async def handleIotDescriptors(conn, descriptors):
         conn.iot_descriptors[descriptor["name"]] = iot_descriptor
 
         #添加新的描述
-        redisClient.hset(redis_key, descriptor["name"], json.dumps(descriptor))
+        redisClient.hset(redis_key, descriptor["name"], json.dumps(descriptor, ensure_ascii=False))
 
         if conn.use_function_call_mode:
             # 注册或获取设备类型
@@ -421,5 +421,11 @@ async def send_iot_conn(conn, name, method_name, parameters):
                     send_message = json.dumps({"type": "iot", "commands": [command]})
                     await conn.websocket.send(send_message)
                     conn.logger.bind(tag=TAG).info(f"发送物联网指令: {send_message}")
+
+                    # 自己加了，解决bug
+                    if parameters:
+                        for p_key, p_value in parameters.items():
+                            await set_iot_status(conn, name, p_key, p_value)
+
                     return
     conn.logger.bind(tag=TAG).error(f"未找到方法{method_name}")

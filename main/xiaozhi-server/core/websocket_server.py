@@ -1,5 +1,9 @@
 import asyncio
+import json
+
 import websockets
+from torch.cuda import device
+
 from config.logger import setup_logging
 from core.connection import ConnectionHandler
 from core.utils.util import initialize_modules, check_vad_update, check_asr_update
@@ -136,13 +140,15 @@ class WebSocketServer:
         server_config = self.config["server"]
         host = server_config.get("ip", "0.0.0.0")
         port = int(server_config.get("http_port"))
+        http_ws_url = server_config.get("http_ws_url", "/xiaozhi/websocket")
 
         if port:
             app = web.Application()
             # 添加路由
             app.add_routes(
                 [
-                    web.post("/xiaozhi/websocket", self.send_websocket),
+                    web.get(http_ws_url, self.get_websocket),
+                    web.post(http_ws_url, self.send_websocket),
                 ]
             )
 
@@ -154,17 +160,37 @@ class WebSocketServer:
 
             await asyncio. Future()
 
+    async def get_websocket(self, request):
+        status = 200
+
+        devices = dict()
+
+        try:
+            device_mac = request.headers.get("device_mac", "").strip()
+
+
+            for handler in self.active_connections:
+                if not device_mac or handler.device_id == device_mac:
+                    devices[handler.device_id] = handler.iot_descriptors
+
+            message = devices
+        except asyncio.CancelledError:
+            self.logger.bind(tag=TAG).warning("请求被取消")
+            status = 503
+            message = "Request was cancelled"
+        except Exception as e:
+            self.logger.bind(tag=TAG).error(f"处理WebSocket推送异常: {e}")
+            status = 500
+            message = f"服务器异常: {e}"
+
+        # 构造响应并设置CORS头部
+        response = web.Response(text=message, content_type="text/plain", status=status)
+        return response
+
     async def send_websocket(self, request):
         status = 200
         message = "OK"
         found = False
-
-        # CORS headers（建议提取为类常量以复用）
-        cors_headers = {
-            #"Access-Control-Allow-Headers": "client-id, content-type, device-id",
-            "Access-Control-Allow-Credentials": "true",
-            "Access-Control-Allow-Origin": "*"
-        }
 
         try:
             # 获取请求参数
@@ -210,5 +236,4 @@ class WebSocketServer:
 
         # 构造响应并设置CORS头部
         response = web.Response(text=message, content_type="text/plain", status=status)
-        response.headers.update(cors_headers)
         return response
