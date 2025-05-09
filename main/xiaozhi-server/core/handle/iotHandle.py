@@ -289,10 +289,6 @@ async def handleIotDescriptors(conn, descriptors):
     """处理物联网描述"""
     functions_changed = False
 
-    #先删除旧的描述
-    redis_key = f"device:{conn.device_id.replace(':', '-')}:iot_desc"
-    redisClient.delete(redis_key)
-
     for descriptor in descriptors:
 
         # 如果descriptor没有properties和methods，则直接跳过
@@ -322,10 +318,7 @@ async def handleIotDescriptors(conn, descriptors):
         )
         conn.iot_descriptors[descriptor["name"]] = iot_descriptor
 
-        #添加新的描述
-        redisClient.hset(redis_key, descriptor["name"], json.dumps(descriptor, ensure_ascii=False))
-
-        if conn.use_function_call_mode:
+        if conn.load_function_plugin:
             # 注册或获取设备类型
             type_id = register_device_type(descriptor)
             device_functions = device_type_registry.get_device_functions(type_id)
