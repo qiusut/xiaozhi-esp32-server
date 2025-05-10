@@ -177,6 +177,13 @@ class IotDescriptor:
                         }
                 self.methods.append(method)
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "properties": self.properties,
+            "methods": self.methods,
+        }
 
 def register_device_type(descriptor):
     """注册设备类型及其功能"""

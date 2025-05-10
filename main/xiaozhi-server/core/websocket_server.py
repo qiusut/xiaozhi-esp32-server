@@ -6,6 +6,7 @@ from torch.cuda import device
 
 from config.logger import setup_logging
 from core.connection import ConnectionHandler
+from core.handle.iotHandle import set_iot_status
 from core.utils.util import initialize_modules, check_vad_update, check_asr_update
 from config.config_loader import get_config_from_api
 from aiohttp import web
@@ -168,12 +169,11 @@ class WebSocketServer:
         try:
             device_mac = request.headers.get("device_mac", "").strip()
 
-
             for handler in self.active_connections:
                 if not device_mac or handler.device_id == device_mac:
-                    devices[handler.device_id] = handler.iot_descriptors
+                    devices[handler.device_id] = {key: value.to_dict() for key, value in handler.iot_descriptors.items()}
 
-            message = devices
+            message = json.dumps(devices)
         except asyncio.CancelledError:
             self.logger.bind(tag=TAG).warning("请求被取消")
             status = 503
@@ -208,6 +208,14 @@ class WebSocketServer:
                         try:
                             # 发送消息并记录日志
                             await handler.websocket.send(body)
+                            body_dict = json.loads(body)
+                            for item in body_dict.get("commands", []):
+                                name = item["name"]
+                                parameters = item["parameters"]
+                                if name and isinstance(parameters, dict) and parameters:
+                                    for p_key, p_value in parameters.items():
+                                        await set_iot_status(handler, name, p_key, p_value)
+
                             self.logger.bind(tag=TAG).info(f"http推送websocket消息: {body}")
                             message = "发送成功"
                             found = True
