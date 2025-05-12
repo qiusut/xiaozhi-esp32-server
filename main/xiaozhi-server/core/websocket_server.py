@@ -1,5 +1,6 @@
 import asyncio
 import json
+from urllib.parse import urlparse
 
 import websockets
 from torch.cuda import device
@@ -140,8 +141,18 @@ class WebSocketServer:
     async def httpApi(self):
         server_config = self.config["server"]
         host = server_config.get("ip", "0.0.0.0")
-        port = int(server_config.get("http_port"))
+        http_url = server_config.get("http_url")
+        parsed_url = urlparse(http_url)
+        port = parsed_url.port
         http_ws_url = server_config.get("http_ws_url", "/xiaozhi/websocket")
+
+        if port is None:
+            if parsed_url.scheme == 'http':
+                port = 80
+            elif parsed_url.scheme == 'https':
+                port = 443
+            else:
+                port = None  # 其他协议没有默认端口时设为 None 或自定义处理
 
         if port:
             app = web.Application()
