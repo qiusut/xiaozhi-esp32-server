@@ -218,6 +218,7 @@ class WebSocketServer:
                     if handler.device_id == device_mac:
                         try:
                             # 发送消息并记录日志
+                            found = True
                             await handler.websocket.send(body)
                             body_dict = json.loads(body)
                             for item in body_dict.get("commands", []):
@@ -229,7 +230,6 @@ class WebSocketServer:
 
                             self.logger.bind(tag=TAG).info(f"http推送websocket消息: {body}")
                             message = "发送成功"
-                            found = True
                         except websockets.exceptions.ConnectionClosed as e:
                             self.logger.bind(tag=TAG).error(f"WebSocket连接已关闭: {e}")
                             status = 503
