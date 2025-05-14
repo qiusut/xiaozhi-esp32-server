@@ -85,14 +85,10 @@ public class RecInfoController {
         return new Result<Void>();
     }
 
-    /*@GetMapping("getServerVo")
-    @Operation(operationId = "获取所有菜谱")
+    @GetMapping("{device_mac}/{id}")
+    @Operation(operationId = "发送菜谱")
     //@RequiresPermissions("sys:role:superAdmin")
-    public Result<RecInfoServerVO> getServerVo() {
-        RecInfoServerVO recInfoVO = new RecInfoServerVO();
-
-        List<RecInfoEntity> recInfoEntities = recInfoService.list(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getStatus, 1));
-
-        return new Result<RecInfoServerVO>().ok(recInfoVO);
-    }*/
+    public Result<String> sendRecipe(@PathVariable("device_mac") String device_mac,@PathVariable("id") String id) {
+        return new Result<String>().ok(recInfoService.sendRecipe(device_mac, id));
+    }
 }

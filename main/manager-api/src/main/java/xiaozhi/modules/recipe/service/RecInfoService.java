@@ -27,5 +27,7 @@ public interface RecInfoService extends IService<RecInfoEntity> {
 
     List<RecInfoVO> toVoList(List<RecInfoEntity> list);
 
+    String sendRecipe(String device_mac, String id);
+
     void initRedis();
 }

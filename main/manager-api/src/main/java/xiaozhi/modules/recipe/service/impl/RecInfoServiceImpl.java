@@ -5,7 +5,8 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.http.Method;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -19,10 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.modules.agent.dao.AgentDao;
 import xiaozhi.modules.agent.entity.AgentEntity;
-import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
-import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.recipe.dao.RecInfoDao;
 import xiaozhi.modules.recipe.dto.RecInfoDTO;
 import xiaozhi.modules.recipe.dto.RecProcessDTO;
@@ -37,6 +36,7 @@ import xiaozhi.modules.recipe.service.RecProcessService;
 import xiaozhi.modules.recipe.vo.RecInfoServerVO;
 import xiaozhi.modules.recipe.vo.RecInfoVO;
 import xiaozhi.modules.recipe.vo.RecProcessVO;
+import xiaozhi.modules.sys.service.SysParamsService;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -55,6 +55,9 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
 
     @Resource
     private RecActionService recActionService;
+
+    @Resource
+    private SysParamsService sysParamsService;
 
     @Resource
     private AgentDao agentDao;
@@ -212,6 +215,28 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
             }
         }
         return recInfoVOS;
+    }
+
+    @Override
+    public String sendRecipe(String device_mac, String id){
+        String http_url = sysParamsService.getValue("server.http_url", true);
+        String http_url_ws = sysParamsService.getValue("server.http_url_ws", true);
+
+        RecInfoEntity dto = this.getById(id);
+        Assert.notNull(dto,"菜谱不存在");
+        Object info = redisTemplate.opsForHash().get("recipe:nameMap",dto.getName());
+        Assert.notNull(info,"菜谱不存在");
+        Map<String, String> headers = new HashMap<>();
+        if(StrUtil.isNotBlank(device_mac)){
+            headers.put("device_mac", device_mac);
+        }
+
+        // 发起 POST 请求
+        return HttpUtil.createRequest(Method.POST, http_url + http_url_ws)
+                .addHeaders(headers)
+                .body("""
+                        {"type": "recipe","recipe": [${recipe}]}""".replace("${recipe}",info.toString()))
+                .execute().body();
     }
 
 
