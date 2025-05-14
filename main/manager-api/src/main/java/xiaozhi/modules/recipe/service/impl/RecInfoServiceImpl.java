@@ -1,0 +1,260 @@
+package xiaozhi.modules.recipe.service.impl;
+
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONArray;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import xiaozhi.common.constant.Constant;
+import xiaozhi.modules.agent.dao.AgentDao;
+import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.agent.service.AgentService;
+import xiaozhi.modules.device.dao.DeviceDao;
+import xiaozhi.modules.device.entity.DeviceEntity;
+import xiaozhi.modules.device.service.DeviceService;
+import xiaozhi.modules.recipe.dao.RecInfoDao;
+import xiaozhi.modules.recipe.dto.RecInfoDTO;
+import xiaozhi.modules.recipe.dto.RecProcessDTO;
+import xiaozhi.modules.recipe.entity.RecActionEntity;
+import xiaozhi.modules.recipe.entity.RecClassifyEntity;
+import xiaozhi.modules.recipe.entity.RecInfoEntity;
+import xiaozhi.modules.recipe.entity.RecProcessEntity;
+import xiaozhi.modules.recipe.service.RecActionService;
+import xiaozhi.modules.recipe.service.RecClassifyService;
+import xiaozhi.modules.recipe.service.RecInfoService;
+import xiaozhi.modules.recipe.service.RecProcessService;
+import xiaozhi.modules.recipe.vo.RecInfoServerVO;
+import xiaozhi.modules.recipe.vo.RecInfoVO;
+import xiaozhi.modules.recipe.vo.RecProcessVO;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@Service
+public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> implements RecInfoService {
+
+    @Resource
+    private RecProcessService recProcessService;
+
+    @Resource
+    private RecClassifyService recClassifyService;
+
+    @Resource
+    private RecActionService recActionService;
+
+    @Resource
+    private AgentDao agentDao;
+
+    @Resource
+    private DeviceDao deviceDao;
+
+    @Resource
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void add(RecInfoDTO dto){
+        String name =  dto.getName();
+        Assert.isFalse(this.exists(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getName, name)), "菜谱名称已存在");
+
+        RecInfoEntity entity = BeanUtil.copyProperties(dto, RecInfoEntity.class);
+        this.save(entity);
+        List<RecProcessDTO> processDTOS = dto.getProcessDTOS();
+        if(CollectionUtil.isNotEmpty(processDTOS)){
+            List<RecProcessEntity> processEntities = BeanUtil.copyToList(processDTOS, RecProcessEntity.class);
+            int sort = 0;
+            for(RecProcessEntity item:processEntities){
+                item.setInfoId(entity.getId());
+                item.setSort(++sort);
+            }
+            recProcessService.saveBatch(processEntities);
+        }
+        initRedis();
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    @Override
+    public void edit(RecInfoVO vo){
+        RecInfoEntity entity = this.getById(vo.getId());
+        Assert.isFalse(!StrUtil.equals(entity.getName(), vo.getName())&&this.exists(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getName, vo.getName())), "菜谱名称已存在");
+
+        entity = BeanUtil.copyProperties(vo, RecInfoEntity.class);
+        this.updateById(entity);
+        recProcessService.remove(new QueryWrapper<RecProcessEntity>().lambda().eq(RecProcessEntity::getInfoId, entity.getId()));
+        List<RecProcessVO> recProcessVOS = vo.getProcessVOS();
+        if(CollectionUtil.isNotEmpty(recProcessVOS)){
+            List<RecProcessEntity> processEntities = BeanUtil.copyToList(recProcessVOS, RecProcessEntity.class);
+            String infoId = entity.getId();
+            int sort = 0;
+            for(RecProcessEntity item:processEntities){
+                item.setInfoId(infoId);
+                item.setSort(++sort);
+            }
+            recProcessService.saveBatch(processEntities);
+        }
+        initRedis();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(String id){
+        this.removeById(id);
+        recProcessService.remove(new QueryWrapper<RecProcessEntity>().lambda().eq(RecProcessEntity::getInfoId, id));
+        initRedis();
+    }
+
+    public Page<RecInfoEntity> getPage(Map<String, Object> params){
+        // 分页参数
+        long curPage = 1;
+        long limit = 10;
+
+        if (params.get(Constant.PAGE) != null) {
+            curPage = Long.parseLong((String) params.get(Constant.PAGE));
+        }
+        if (params.get(Constant.LIMIT) != null) {
+            limit = Long.parseLong((String) params.get(Constant.LIMIT));
+        }
+        QueryWrapper<RecInfoEntity> wrapper = new QueryWrapper<>();
+        if(params.containsKey("name")){
+            wrapper.lambda().like(ObjectUtil.isNotEmpty(params.get("name")),RecInfoEntity::getName, params.get("name"));
+        }
+        if(params.containsKey("classifyId")&&ObjectUtil.isNotEmpty(params.get("classifyId"))){
+            String classifyId = (String) params.get("classifyId");
+            List<String> ids = recClassifyService.listObjs(Wrappers.lambdaQuery(RecClassifyEntity.class).eq(RecClassifyEntity::getParentId, classifyId).select(RecClassifyEntity::getId));
+            ids.add(classifyId);
+            wrapper.lambda().in(RecInfoEntity::getClassifyId, ids);
+        }
+        wrapper.lambda().orderByDesc(RecInfoEntity::getCreateDate);
+
+        Page<RecInfoEntity> page = new Page<>(curPage, limit);
+
+        page = this.page(page, wrapper);
+
+        return page;
+    }
+
+
+    @Override
+    public List<RecInfoVO> toVoList(List<RecInfoEntity> list){
+        List<RecInfoVO> recInfoVOS = new ArrayList<>();
+        if(CollectionUtil.isNotEmpty(list)){
+            List<String> ids = new ArrayList<>();
+            List<String> classifyIds = new ArrayList<>();
+            list.forEach(item->{
+                ids.add(item.getId());
+                classifyIds.add(item.getClassifyId());
+                recInfoVOS.add(BeanUtil.copyProperties(item, RecInfoVO.class));
+            });
+            Map<String, List<RecProcessEntity>> processMap = new HashMap<>();
+            Map<String, String> classifyMap = new HashMap<>();
+            Map<String, RecActionEntity> actionMap = new HashMap<>();
+            List<RecProcessEntity> processList = recProcessService.list(new QueryWrapper<RecProcessEntity>().lambda().in(RecProcessEntity::getInfoId, ids).orderByAsc(RecProcessEntity::getSort));
+            if(CollectionUtil.isNotEmpty(processList)){
+                List<String> actionIds = new ArrayList<>();
+                for(RecProcessEntity item:processList){
+                    List<RecProcessEntity> recProcessEntityList = processMap.getOrDefault(item.getInfoId(), new ArrayList<>());
+                    recProcessEntityList.add(item);
+                    processMap.put(item.getInfoId(), recProcessEntityList);
+
+                    List<RecProcessDTO.Action> actions = item.getActions();
+                    if(CollectionUtil.isNotEmpty(actions)){
+                        for(Object obj:actions){
+                            if (obj instanceof Map<?, ?>) {
+                                @SuppressWarnings("unchecked")
+                                Map<String, String> map = (Map<String, String>) obj;
+                                actionIds.add(map.get("id"));
+                            }
+                        }
+                    }
+                }
+
+
+                if(CollectionUtil.isNotEmpty(actionIds)){
+                    List<RecActionEntity> actionEntities = recActionService.list(Wrappers.lambdaQuery(RecActionEntity.class).in(RecActionEntity::getId, actionIds.stream().distinct().toList()));
+                    if(CollectionUtil.isNotEmpty(actionEntities)){
+                        actionMap = actionEntities.stream().collect(Collectors.toMap(RecActionEntity::getId,e->e));
+                    }
+                }
+            }
+            List<RecClassifyEntity> classifyList = recClassifyService.listByIds(classifyIds);
+            if(CollectionUtil.isNotEmpty(classifyList)){
+                classifyMap = classifyList.stream().collect(Collectors.toMap(RecClassifyEntity::getId, RecClassifyEntity::getName));
+            }
+            for (RecInfoVO recInfoVO : recInfoVOS){
+                recInfoVO.setClassifyName(classifyMap.get(recInfoVO.getClassifyId()));
+                if(processMap.containsKey(recInfoVO.getId())){
+                    List<RecProcessVO> processVOS = new ArrayList<>();
+                    for (RecProcessEntity processEntity : processMap.get(recInfoVO.getId())) {
+                        RecProcessVO processVO = BeanUtil.copyProperties(processEntity, RecProcessVO.class);
+                        if(CollectionUtil.isNotEmpty(processEntity.getActions())){
+                            for (RecProcessVO.Action action : processVO.getActions()){
+                                action.setName(actionMap.get(action.getId()).getName());
+                            }
+                        }
+                        processVOS.add(processVO);
+                    }
+                    recInfoVO.setProcessVOS(processVOS);
+                }
+            }
+        }
+        return recInfoVOS;
+    }
+
+
+    @Override
+    public void initRedis(){
+        String key_prefix = "recipe:";
+        //List<RecInfoServerVO> recInfoVOS = new ArrayList<>();
+        List<RecInfoEntity> list =this.list(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getStatus, 1));
+        if(CollectionUtil.isNotEmpty(list)){
+            JSONObject jsonObject = new JSONObject();
+            Map<String, List<RecProcessEntity>> processMap = new HashMap<>();
+            List<RecProcessEntity> processList = recProcessService.list(new QueryWrapper<RecProcessEntity>().lambda()
+                    .in(RecProcessEntity::getInfoId, list.stream().map(RecInfoEntity::getId).toList())
+                    .orderByAsc(RecProcessEntity::getSort));
+            if(CollectionUtil.isNotEmpty(processList)){
+                processMap = processList.stream().collect(Collectors.groupingBy(RecProcessEntity::getInfoId));
+            }
+            for (RecInfoEntity recInfoEntity : list){
+                RecInfoServerVO recInfoVO = BeanUtil.copyProperties(recInfoEntity, RecInfoServerVO.class);
+                if(processMap.containsKey(recInfoEntity.getId())){
+                    recInfoVO.setProcessVOS(BeanUtil.copyToList(processMap.get(recInfoEntity.getId()), RecInfoServerVO.ProcessServerVO.class));
+                }
+                jsonObject.set(recInfoEntity.getName(), JSONUtil.toJsonStr(recInfoVO));
+            }
+            redisTemplate.opsForHash().putAll(key_prefix+"nameMap", jsonObject);
+        }
+
+        List<AgentEntity> agentList = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class).eq(AgentEntity::getIsRecipe, 1));
+        if(CollectionUtil.isNotEmpty(agentList)){
+            List<String> deviceIds =deviceDao.selectObjs(new QueryWrapper<DeviceEntity>().lambda()
+                    .in(DeviceEntity::getAgentId, agentList.stream().map(AgentEntity::getId).toList())
+                    .select(DeviceEntity::getMacAddress)
+            );
+            if (CollectionUtil.isNotEmpty(deviceIds)){
+                deviceIds.forEach(e->{
+                    redisTemplate.opsForValue().set("device:"+e.replace(":","-")+":recipe_switch", 1);
+                });
+
+            }
+        }
+
+
+    }
+
+
+}
