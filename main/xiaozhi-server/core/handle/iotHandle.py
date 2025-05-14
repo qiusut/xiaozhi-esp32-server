@@ -422,7 +422,7 @@ async def send_iot_conn(conn, name, method_name, parameters):
                     await conn.websocket.send(send_message)
                     conn.logger.bind(tag=TAG).info(f"发送物联网指令: {send_message}")
 
-                    # 自己加了，解决bug
+                    # 自己加了，解决bug-qiu
                     if parameters:
                         for p_key, p_value in parameters.items():
                             await set_iot_status(conn, name, p_key, p_value)
