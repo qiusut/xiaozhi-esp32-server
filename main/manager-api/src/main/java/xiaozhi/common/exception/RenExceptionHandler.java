@@ -1,7 +1,9 @@
 package xiaozhi.common.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import org.apache.shiro.authz.UnauthorizedException;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -9,6 +11,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import xiaozhi.common.utils.Result;
+
+import java.util.Objects;
 
 /**
  * 异常处理器
@@ -51,7 +55,24 @@ public class RenExceptionHandler {
     public Result<Void> handleException(Exception ex) {
         log.error(ex.getMessage(), ex);
 
-        return new Result<Void>().error();
+        String errorMsg;
+        if (ex instanceof BindException) {
+            //对于验证注解在实体类的属性中的异常处理
+            BindException bex = (BindException) ex;
+            errorMsg = Objects.requireNonNull(bex.getBindingResult().getFieldError()).getDefaultMessage();
+        } else if (ex instanceof ConstraintViolationException) {
+            //对于验证注解直接在方法参数中使用的异常处理
+            ConstraintViolationException cve = (ConstraintViolationException) ex;
+            errorMsg = cve.getMessage();
+            if (errorMsg != null) {
+                errorMsg = errorMsg.substring(errorMsg.indexOf(": ") + 2);
+            }
+        } else {
+            //其他
+            errorMsg = ex.getMessage();
+        }
+
+        return new Result<Void>().error(errorMsg);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)

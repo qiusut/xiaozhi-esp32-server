@@ -74,7 +74,7 @@ public class SwaggerConfig {
         return GroupedOpenApi.builder()
                 .group("tb")
                 .pathsToMatch("/tb/**")
-                .displayName("物联网")
+                .displayName("thingsBoard")
                 .build();
     }
 
@@ -84,6 +84,15 @@ public class SwaggerConfig {
                 .group("recipe")
                 .pathsToMatch("/recipe/**")
                 .displayName("菜谱")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi iotApi() {
+        return GroupedOpenApi.builder()
+                .group("iot")
+                .pathsToMatch("/iot/**")
+                .displayName("iot控制")
                 .build();
     }
 
