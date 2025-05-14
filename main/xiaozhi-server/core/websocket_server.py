@@ -228,7 +228,7 @@ class WebSocketServer:
                                     for p_key, p_value in parameters.items():
                                         await set_iot_status(handler, name, p_key, p_value)
 
-                            self.logger.bind(tag=TAG).info(f"http推送websocket消息: {body}")
+                            self.logger.bind(tag=TAG).info(f"{device_mac}-http推送websocket消息: {body}")
                             message = "发送成功"
                         except websockets.exceptions.ConnectionClosed as e:
                             self.logger.bind(tag=TAG).error(f"WebSocket连接已关闭: {e}")
