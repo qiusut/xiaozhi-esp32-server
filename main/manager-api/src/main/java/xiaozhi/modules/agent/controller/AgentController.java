@@ -204,7 +204,9 @@ public class AgentController {
             existingEntity.setSort(dto.getSort());
         }
 
-        existingEntity.setIsRecipe(ObjectUtil.defaultIfNull(dto.getIsRecipe(), 0));
+        if (dto.getIsRecipe() != null) {
+            existingEntity.setIsRecipe(dto.getIsRecipe());
+        }
 
         // 设置更新者信息
         UserDetail user = SecurityUser.getUser();
