@@ -41,6 +41,8 @@ public class RecInfoServerVO {
         @Data
         @Schema(description = "操作")
         public static class Action{
+            @Schema(description = "名称")
+            private String name;
             @Schema(description = "操作方法")
             private String method;
             @Schema(description = "参数集")

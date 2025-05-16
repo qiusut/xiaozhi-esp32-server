@@ -173,7 +173,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                     recProcessEntityList.add(item);
                     processMap.put(item.getInfoId(), recProcessEntityList);
 
-                    List<RecProcessDTO.Action> actions = item.getActions();
+                    List<RecProcessEntity.Action> actions = item.getActions();
                     if(CollectionUtil.isNotEmpty(actions)){
                         for(Object obj:actions){
                             if (obj instanceof Map<?, ?>) {
@@ -205,7 +205,9 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                         RecProcessVO processVO = BeanUtil.copyProperties(processEntity, RecProcessVO.class);
                         if(CollectionUtil.isNotEmpty(processEntity.getActions())){
                             for (RecProcessVO.Action action : processVO.getActions()){
-                                action.setName(actionMap.get(action.getId()).getName());
+                                if(actionMap.get(action.getId())!=null){
+                                    action.setName(actionMap.get(action.getId()).getName());
+                                }
                             }
                         }
                         processVOS.add(processVO);
@@ -243,25 +245,24 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     @Override
     public void initRedis(){
         String key_prefix = "recipe:";
-        //List<RecInfoServerVO> recInfoVOS = new ArrayList<>();
         List<RecInfoEntity> list =this.list(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getStatus, 1));
-        if(CollectionUtil.isNotEmpty(list)){
+        if(CollectionUtil.isNotEmpty(list)) {
+            List<RecInfoVO> recInfoVOS = this.toVoList(list);
             JSONObject jsonObject = new JSONObject();
-            Map<String, List<RecProcessEntity>> processMap = new HashMap<>();
-            List<RecProcessEntity> processList = recProcessService.list(new QueryWrapper<RecProcessEntity>().lambda()
-                    .in(RecProcessEntity::getInfoId, list.stream().map(RecInfoEntity::getId).toList())
-                    .orderByAsc(RecProcessEntity::getSort));
-            if(CollectionUtil.isNotEmpty(processList)){
-                processMap = processList.stream().collect(Collectors.groupingBy(RecProcessEntity::getInfoId));
+
+            for (RecInfoVO item : recInfoVOS) {
+                RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
+                /*for(RecProcessVO processVO : item.getProcessVOS()){
+                    for(RecProcessVO.Action action : processVO.getActions()){
+                        Map<String,String> parameters = action.getParameters();
+                        parameters.put("type",action.getName());
+                        action.setParameters(parameters);
+                    }
+                }*/
+
+                jsonObject.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
+                redisTemplate.opsForHash().putAll(key_prefix + "nameMap", jsonObject);
             }
-            for (RecInfoEntity recInfoEntity : list){
-                RecInfoServerVO recInfoVO = BeanUtil.copyProperties(recInfoEntity, RecInfoServerVO.class);
-                if(processMap.containsKey(recInfoEntity.getId())){
-                    recInfoVO.setProcessVOS(BeanUtil.copyToList(processMap.get(recInfoEntity.getId()), RecInfoServerVO.ProcessServerVO.class));
-                }
-                jsonObject.set(recInfoEntity.getName(), JSONUtil.toJsonStr(recInfoVO));
-            }
-            redisTemplate.opsForHash().putAll(key_prefix+"nameMap", jsonObject);
         }
 
         List<AgentEntity> agentList = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class).eq(AgentEntity::getIsRecipe, 1));

@@ -34,7 +34,7 @@ public class RecProcessEntity {
 
     @Schema(description = "操作")
     @TableField(typeHandler = JacksonTypeHandler.class)
-    private List<RecProcessDTO.Action> actions;
+    private List<RecProcessEntity.Action> actions;
 
     @Data
     @Schema(description = "操作")
