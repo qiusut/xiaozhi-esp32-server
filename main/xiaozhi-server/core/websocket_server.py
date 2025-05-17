@@ -3,14 +3,13 @@ import json
 from urllib.parse import urlparse
 
 import websockets
-from torch.cuda import device
+from aiohttp import web
 
+from config.config_loader import get_config_from_api
 from config.logger import setup_logging
 from core.connection import ConnectionHandler
 from core.handle.iotHandle import set_iot_status
 from core.utils.util import initialize_modules, check_vad_update, check_asr_update
-from config.config_loader import get_config_from_api
-from aiohttp import web
 
 TAG = __name__
 
@@ -220,6 +219,8 @@ class WebSocketServer:
                             # 发送消息并记录日志
                             found = True
                             await handler.websocket.send(body)
+                            future = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
+                            handler.tts_queue.put((future, 1))
                             body_dict = json.loads(body)
                             for item in body_dict.get("commands", []):
                                 name = item["name"]
