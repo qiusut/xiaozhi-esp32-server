@@ -203,6 +203,7 @@ public class LoginController {
         config.put("allowUserRegister", sysUserService.getAllowUserRegister());
         List<SysDictDataItem> list = sysDictDataService.getDictDataByType("MOBILE_AREA");
         config.put("mobileAreaList", list);
+        config.put("menuSeasoningType", sysParamsService.getValue("system.menu_seasoning_type",true));
 
         return new Result<Map<String, Object>>().ok(config);
     }

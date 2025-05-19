@@ -117,6 +117,9 @@ public class AgentController {
             entity.setChatHistoryConf(template.getChatHistoryConf());
             entity.setLangCode(template.getLangCode());
             entity.setLanguage(template.getLanguage());
+            if(entity.getIsRecipe()==null){
+                entity.setIsRecipe(1);
+            }
         }
 
         // 设置用户ID和创建者信息

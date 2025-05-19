@@ -223,7 +223,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     public String sendRecipe(String device_mac, String id){
         String http_url = sysParamsService.getValue("server.http_url", true);
         String http_url_ws = sysParamsService.getValue("server.http_url_ws", true);
-
+        //http_url = "http://127.0.0.1:8003";
         RecInfoEntity dto = this.getById(id);
         Assert.notNull(dto,"菜谱不存在");
         Object info = redisTemplate.opsForHash().get("recipe:nameMap",dto.getName());
@@ -237,7 +237,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         return HttpUtil.createRequest(Method.POST, http_url + http_url_ws)
                 .addHeaders(headers)
                 .body("""
-                        {"type": "recipe","recipe": [${recipe}]}""".replace("${recipe}",info.toString()))
+                        {"type": "recipe","recipe": ${recipe}}""".replace("${recipe}",info.toString()))
                 .execute().body();
     }
 
