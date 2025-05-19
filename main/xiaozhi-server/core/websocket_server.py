@@ -11,6 +11,9 @@ from core.connection import ConnectionHandler
 from core.handle.iotHandle import set_iot_status
 from core.utils.util import initialize_modules, check_vad_update, check_asr_update
 
+from core.handle.sendAudioHandle import send_stt_message,send_tts_message
+from core.handle.abortHandle import handleAbortMessage
+
 TAG = __name__
 
 
@@ -218,9 +221,17 @@ class WebSocketServer:
                         try:
                             # 发送消息并记录日志
                             found = True
-                            await handler.websocket.send(body)
-                            future = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
-                            handler.tts_queue.put((future, 1))
+
+                            try:
+                                await send_stt_message(handler, "收到,指令发送成功")
+                                future = handler.executor.submit(handler.speak_and_play, "收到", 0)
+                                handler.tts_queue.put((future, 0))
+                                await handler.websocket.send(body)
+                                future1 = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
+                                handler.tts_queue.put((future1, 1))
+                            finally:
+                                await send_tts_message(handler, "stop", None)
+
                             body_dict = json.loads(body)
                             for item in body_dict.get("commands", []):
                                 name = item["name"]
