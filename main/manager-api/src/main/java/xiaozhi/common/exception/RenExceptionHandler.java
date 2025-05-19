@@ -1,8 +1,14 @@
 package xiaozhi.common.exception;
 
+import java.util.List;
+import java.util.Objects;
+
 import jakarta.validation.ConstraintViolationException;
 import org.apache.shiro.authz.UnauthorizedException;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.validation.ObjectError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -79,6 +85,17 @@ public class RenExceptionHandler {
     public Result<Void> handleNoResourceFoundException(NoResourceFoundException ex) {
         log.warn("Resource not found: {}", ex.getMessage());
         return new Result<Void>().error(404, "资源不存在");
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Result<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex) {
+        List<ObjectError> allErrors = ex.getBindingResult().getAllErrors();
+        String errorMsg = allErrors.stream()
+                .filter(Objects::nonNull)
+                .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .findFirst()
+                .orElse("");
+        return new Result<Void>().error(400, errorMsg);
     }
 
 }
