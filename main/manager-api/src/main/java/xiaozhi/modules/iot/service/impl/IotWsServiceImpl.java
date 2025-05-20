@@ -37,7 +37,7 @@ public class IotWsServiceImpl implements IotWsService {
     public String getWs(String device_mac){
         String http_url = sysParamsService.getValue("server.http_url", true);
         String http_url_ws = sysParamsService.getValue("server.http_url_ws", true);
-
+        //http_url = "http://127.0.0.1:8003";
         Map<String, Object> headers = new HashMap<>();
         if(StrUtil.isNotBlank(device_mac)){
             headers.put("device_mac", device_mac);
