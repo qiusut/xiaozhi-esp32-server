@@ -157,9 +157,7 @@ public class RedisUtils {
      */
     public void emptyAll() {
         // Lua 脚本 FLUSHALL是redis清空所有库的命令
-        //String luaScript =resourceUtils.loadString("lua/emptyAll.lua");
-        // Lua 脚本 FLUSHALL是redis清空所有库的命令(sb操作,应该改为只删除当前数据库节点数据)
-        String luaScript ="redis.call('FLUSHDB')";
+        String luaScript =resourceUtils.loadString("lua/emptyAll.lua");
 
         // 创建 DefaultRedisScript 对象
         DefaultRedisScript<Void> redisScript = new DefaultRedisScript<>();
