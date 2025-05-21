@@ -208,6 +208,20 @@ class ConnectionHandler:
 
             try:
                 async for message in self.websocket:
+                    try:
+                        if isinstance(message, str):
+                            msg_json = json.loads(message)
+                            if "text" in msg_json:
+                                if msg_json["text"].startswith("{"):
+                                    text_json = json.loads(msg_json["text"])
+                                    if "type" in text_json:
+                                        text_type = text_json["type"]
+                                        if text_type in ("iot", "read"):
+                                            message = json.dumps(text_json)
+                    except Exception as e:
+                        self.logger.bind(tag=TAG).error(
+                            f"{e}自己加的无法解析JSON: {message}"
+                        )
                     await self._route_message(message)
             except websockets.exceptions.ConnectionClosed:
                 self.logger.bind(tag=TAG).info("客户端断开连接")

@@ -151,5 +151,10 @@ async def handleTextMessage(conn, message):
             # 重启服务器
             elif msg_json["action"] == "restart":
                 await conn.handle_restart(msg_json)
+        elif msg_json["type"] == "read":
+            if "text" in msg_json:
+                future = conn.executor.submit(conn.speak_and_play, msg_json["text"], 1)
+                conn.tts_queue.put((future, 1))
+
     except json.JSONDecodeError:
         await conn.websocket.send(message)
