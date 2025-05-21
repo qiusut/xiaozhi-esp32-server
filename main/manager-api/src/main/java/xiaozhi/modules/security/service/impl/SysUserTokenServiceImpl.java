@@ -2,6 +2,7 @@ package xiaozhi.modules.security.service.impl;
 
 import java.util.Date;
 
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.stereotype.Service;
 
 import cn.hutool.core.date.DateUtil;
@@ -112,5 +113,12 @@ public class SysUserTokenServiceImpl extends BaseServiceImpl<SysUserTokenDao, Sy
         // 使 token 失效，后需要重新登录
         Date expireDate = DateUtil.offsetMinute(new Date(), -1);
         baseDao.logout(userId, expireDate);
+    }
+
+    @Override
+    public void refExpireDate(String token) {
+       this.baseDao.update(Wrappers.lambdaUpdate(SysUserTokenEntity.class)
+               .eq(SysUserTokenEntity::getToken, token)
+               .set(SysUserTokenEntity::getExpireDate, new Date(new Date().getTime() + EXPIRE * 1000)));
     }
 }

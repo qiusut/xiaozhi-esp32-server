@@ -38,4 +38,5 @@ public interface SysUserTokenService extends BaseService<SysUserTokenEntity> {
      */
     void changePassword(Long userId, PasswordDTO passwordDTO);
 
+    void refExpireDate(String token);
 }
