@@ -227,7 +227,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     public String sendRecipe(String device_mac, String id){
         String http_url = sysParamsService.getValue("server.http_url", true);
         String http_url_ws = sysParamsService.getValue("server.http_url_ws", true);
-        if(profiles_active.equals("dev")){
+        if(StrUtil.equals("dev", profiles_active)){
             http_url = "http://127.0.0.1:8003";
         }
         RecInfoEntity dto = this.getById(id);
