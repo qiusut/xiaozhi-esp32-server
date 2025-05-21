@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +68,9 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
 
     @Resource
     private RedisTemplate<String, Object> redisTemplate;
+
+    @Value("${spring.profiles.active}")
+    private String profiles_active;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -223,7 +227,9 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     public String sendRecipe(String device_mac, String id){
         String http_url = sysParamsService.getValue("server.http_url", true);
         String http_url_ws = sysParamsService.getValue("server.http_url_ws", true);
-        //http_url = "http://127.0.0.1:8003";
+        if(profiles_active.equals("dev")){
+            http_url = "http://127.0.0.1:8003";
+        }
         RecInfoEntity dto = this.getById(id);
         Assert.notNull(dto,"菜谱不存在");
         Object info = redisTemplate.opsForHash().get("recipe:nameMap",dto.getName());
