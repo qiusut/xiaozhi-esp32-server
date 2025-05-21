@@ -224,17 +224,20 @@ class WebSocketServer:
                             # 发送消息并记录日志
                             found = True
 
-                            try:
-                                await send_stt_message(handler, "收到,指令发送成功")
-                                future = handler.executor.submit(handler.speak_and_play, "收到", 0)
-                                handler.tts_queue.put((future, 0))
-                                await handler.websocket.send(body)
-                                future1 = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
-                                handler.tts_queue.put((future1, 1))
-                            finally:
-                                await send_tts_message(handler, "stop", None)
-
                             body_dict = json.loads(body)
+                            if body_dict["type"] not in ("recipe",):
+                                try:
+                                    await send_stt_message(handler, "收到,指令发送成功")
+                                    future = handler.executor.submit(handler.speak_and_play, "收到", 0)
+                                    handler.tts_queue.put((future, 0))
+                                    await handler.websocket.send(body)
+                                    future1 = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
+                                    handler.tts_queue.put((future1, 1))
+                                finally:
+                                    await send_tts_message(handler, "stop", None)
+                            else:
+                                await handler.websocket.send(body)
+
                             for item in body_dict.get("commands", []):
                                 name = item["name"]
                                 parameters = item["parameters"]
