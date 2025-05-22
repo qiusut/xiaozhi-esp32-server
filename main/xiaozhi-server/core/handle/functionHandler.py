@@ -56,6 +56,7 @@ class FunctionHandler:
         self.function_registry.register_function("plugin_loader")
         self.function_registry.register_function("get_time")
         self.function_registry.register_function("get_lunar")
+        self.function_registry.register_function("handle_speaker_volume_or_screen_brightness")
         self.function_registry.register_function("handle_device")
         device_id = self.conn.headers.get("device-id", "")
         switch = redisClient.get(f"device:{device_id.replace(':', '-')}:recipe_switch")
