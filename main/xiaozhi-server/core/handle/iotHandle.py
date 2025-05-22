@@ -1,7 +1,6 @@
-import json
 import asyncio
-from config.logger import setup_logging
-from config.settings import redisClient
+import json
+
 from plugins_func.register import (
     FunctionItem,
     register_device_function,
