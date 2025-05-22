@@ -1,9 +1,16 @@
 from config.logger import setup_logging
 import json
+from plugins_func.register import (
+    FunctionRegistry,
+    ActionResponse,
+    Action,
+    ToolType,
+    DeviceTypeRegistry,
+)
+from plugins_func.functions.hass_init import append_devices_to_prompt
 
 from config.settings import redisClient
-from plugins_func.register import FunctionRegistry, ActionResponse, Action, ToolType
-from plugins_func.functions.tb_init import append_devices_to_prompt
+from plugins_func.functions.tb_init import append_devices_to_prompt as tb_append_devices_to_prompt
 
 TAG = __name__
 
@@ -12,6 +19,7 @@ class FunctionHandler:
     def __init__(self, conn):
         self.conn = conn
         self.config = conn.config
+        self.device_type_registry = DeviceTypeRegistry()
         self.function_registry = FunctionRegistry()
         self.register_nessary_functions()
         self.register_config_functions()
@@ -73,7 +81,7 @@ class FunctionHandler:
 
         """tb系统需要初始化提示词"""
         if self.function_registry.function_registry.get("tb_device"):
-            tb_device_list = append_devices_to_prompt(self.conn)
+            tb_device_list = tb_append_devices_to_prompt(self.conn)
             #添加tb系统函数-qiu
             if tb_device_list:
 

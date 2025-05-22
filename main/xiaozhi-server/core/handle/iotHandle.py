@@ -3,8 +3,8 @@ import asyncio
 from config.logger import setup_logging
 from config.settings import redisClient
 from plugins_func.register import (
-    device_type_registry,
-    register_function,
+    FunctionItem,
+    register_device_function,
     ActionResponse,
     Action,
     ToolType,
@@ -185,7 +185,7 @@ class IotDescriptor:
             "methods": self.methods,
         }
 
-def register_device_type(descriptor):
+def register_device_type(descriptor, device_type_registry):
     """注册设备类型及其功能"""
     device_name = descriptor["name"]
     type_id = device_type_registry.generate_device_type_id(descriptor)
@@ -221,10 +221,12 @@ def register_device_type(descriptor):
             },
         }
         query_func = create_iot_query_function(device_name, prop_name, prop_info)
-        decorated_func = register_function(func_name, func_desc, ToolType.IOT_CTL)(
-            query_func
+        decorated_func = register_device_function(
+            func_name, func_desc, ToolType.IOT_CTL
+        )(query_func)
+        functions[func_name] = FunctionItem(
+            func_name, func_desc, decorated_func, ToolType.IOT_CTL
         )
-        functions[func_name] = decorated_func
 
     # 为每个方法创建控制函数
     for method_name, method_info in descriptor["methods"].items():
@@ -275,10 +277,12 @@ def register_device_type(descriptor):
             },
         }
         control_func = create_iot_function(device_name, method_name, method_info)
-        decorated_func = register_function(func_name, func_desc, ToolType.IOT_CTL)(
-            control_func
+        decorated_func = register_device_function(
+            func_name, func_desc, ToolType.IOT_CTL
+        )(control_func)
+        functions[func_name] = FunctionItem(
+            func_name, func_desc, decorated_func, ToolType.IOT_CTL
         )
-        functions[func_name] = decorated_func
 
     device_type_registry.register_device_type(type_id, functions)
     return type_id
@@ -297,7 +301,6 @@ async def handleIotDescriptors(conn, descriptors):
     functions_changed = False
 
     for descriptor in descriptors:
-
         # 如果descriptor没有properties和methods，则直接跳过
         if "properties" not in descriptor and "methods" not in descriptor:
             continue
@@ -327,13 +330,16 @@ async def handleIotDescriptors(conn, descriptors):
 
         if conn.load_function_plugin:
             # 注册或获取设备类型
-            type_id = register_device_type(descriptor)
+            device_type_registry = conn.func_handler.device_type_registry
+            type_id = register_device_type(descriptor, device_type_registry)
             device_functions = device_type_registry.get_device_functions(type_id)
 
             # 在连接级注册设备函数
             if hasattr(conn, "func_handler"):
-                for func_name in device_functions:
-                    conn.func_handler.function_registry.register_function(func_name)
+                for func_name, func_item in device_functions.items():
+                    conn.func_handler.function_registry.register_function(
+                        func_name, func_item
+                    )
                     conn.logger.bind(tag=TAG).info(
                         f"注册IOT函数到function handler: {func_name}"
                     )
