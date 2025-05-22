@@ -8,6 +8,7 @@ import xiaozhi.common.service.BaseService;
 import xiaozhi.modules.device.dto.DevicePageUserDTO;
 import xiaozhi.modules.device.dto.DeviceReportReqDTO;
 import xiaozhi.modules.device.dto.DeviceReportRespDTO;
+import xiaozhi.modules.device.dto.DeviceUpdateDTO;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.vo.UserShowDeviceListVO;
 
@@ -88,4 +89,5 @@ public interface DeviceService extends BaseService<DeviceEntity> {
     Date getLatestLastConnectionTime(String agentId);
 
 
+    void updateAlias(DeviceUpdateDTO dto);
 }

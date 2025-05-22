@@ -2,15 +2,11 @@ package xiaozhi.modules.device.controller;
 
 import java.util.List;
 
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.StrUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,6 +18,7 @@ import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.device.dto.DeviceRegisterDTO;
 import xiaozhi.modules.device.dto.DeviceUnBindDTO;
+import xiaozhi.modules.device.dto.DeviceUpdateDTO;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.security.user.SecurityUser;
@@ -80,6 +77,15 @@ public class DeviceController {
         return new Result<Void>();
     }
 
+    @PostMapping("/update")
+    @Operation(summary = "修改设备")
+    @RequiresPermissions("sys:role:normal")
+    public Result<Void> update(@RequestBody DeviceUpdateDTO dto) {
+        deviceService.updateAlias(dto);
+
+        return new Result<Void>();
+    }
+
     @PutMapping("/enableOta/{id}/{status}")
     @Operation(summary = "启用/关闭OTA自动升级")
     @RequiresPermissions("sys:role:normal")
@@ -91,5 +97,13 @@ public class DeviceController {
         entity.setAutoUpdate(status);
         deviceService.updateById(entity);
         return new Result<Void>();
+    }
+
+    @GetMapping("/{deviceId}")
+    @Operation(summary = "获取设备详情")
+    @RequiresPermissions("sys:role:normal")
+    public Result<DeviceEntity> getDeviceView(@PathVariable String deviceId) {
+        DeviceEntity entity = deviceService.selectById(deviceId);
+        return new Result<DeviceEntity>().ok(entity);
     }
 }

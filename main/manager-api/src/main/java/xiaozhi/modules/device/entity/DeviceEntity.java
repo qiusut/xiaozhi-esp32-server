@@ -43,6 +43,9 @@ public class DeviceEntity {
     @Schema(description = "智能体ID")
     private String agentId;
 
+    @Schema(description = "设备备注")
+    private String remark;
+
     @Schema(description = "固件版本号")
     private String appVersion;
 

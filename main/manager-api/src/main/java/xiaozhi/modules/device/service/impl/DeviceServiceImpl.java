@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
 
+import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.StrUtil;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.scheduling.annotation.Async;
@@ -34,11 +37,11 @@ import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.common.utils.DateUtils;
 import xiaozhi.modules.agent.dao.AgentDao;
 import xiaozhi.modules.agent.entity.AgentEntity;
-import xiaozhi.modules.agent.service.AgentService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.dto.DevicePageUserDTO;
 import xiaozhi.modules.device.dto.DeviceReportReqDTO;
 import xiaozhi.modules.device.dto.DeviceReportRespDTO;
+import xiaozhi.modules.device.dto.DeviceUpdateDTO;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.device.entity.OtaEntity;
 import xiaozhi.modules.device.service.DeviceService;
@@ -126,6 +129,26 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         deviceEntity.setUpdater(user.getId());
         deviceEntity.setUpdateDate(currentTime);
         deviceEntity.setLastConnectedAt(currentTime);
+
+        //添加默认别名
+        DeviceEntity device_alias = deviceDao.selectOne(Wrappers.query(DeviceEntity.class)
+                .apply("alias REGEXP {0}", board + "_[A-Za-z]+$")
+                .lambda().eq(DeviceEntity::getUserId, user.getId())
+                .eq(DeviceEntity::getBoard,  board)
+                .likeRight(DeviceEntity::getAlias, board+"_")
+                .orderByDesc(DeviceEntity::getAlias)
+                .last("LIMIT 1")
+                .select(DeviceEntity::getAlias)
+        );
+        String alias = board+"_A";
+        if (device_alias!=null&&StrUtil.isNotBlank(device_alias.getAlias())){
+            String currentSuffix = extractSuffix(device_alias.getAlias());
+            String nextSuffix = getNextSuffix(currentSuffix);
+            alias = board + "_" + nextSuffix;
+        }
+        deviceEntity.setAlias(alias);
+
+
         deviceDao.insert(deviceEntity);
 
         // 清理redis缓存
@@ -306,6 +329,24 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         return maxDate;
     }
 
+    @Override
+    public void updateAlias(DeviceUpdateDTO dto){
+        UserDetail user = SecurityUser.getUser();
+        DeviceEntity existingEntity = deviceDao.selectById(dto.getId());
+        Assert.notNull(existingEntity, "设备不存在");
+        Assert.isTrue(existingEntity.getUserId().equals(user.getId()), "设备不属于当前用户");
+
+        if(dto.getAlias()!=null&&!StrUtil.equals(dto.getAlias(),existingEntity.getAlias())){
+            Assert.isFalse(deviceDao.exists(Wrappers.lambdaQuery(DeviceEntity.class).eq(DeviceEntity::getAlias, dto.getAlias())), "设备别名已存在");
+            existingEntity.setAlias(dto.getAlias());
+        }
+        if(dto.getRemark()!=null&&!StrUtil.equals(dto.getRemark(),existingEntity.getRemark())){
+            existingEntity.setRemark(dto.getRemark());
+        }
+
+        deviceDao.updateById(existingEntity);
+    }
+
     private String getDeviceCacheKey(String deviceId) {
         String safeDeviceId = deviceId.replace(":", "_").toLowerCase();
         String dataKey = String.format("ota:activation:data:%s", safeDeviceId);
@@ -418,4 +459,41 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         }
         return 0;
     }
+
+
+
+    private static String extractSuffix(String fullAlias) {
+        int lastUnderscoreIndex = fullAlias.lastIndexOf('_');
+        if (lastUnderscoreIndex != -1 && lastUnderscoreIndex < fullAlias.length() - 1) {
+            return fullAlias.substring(lastUnderscoreIndex + 1);
+        }
+        return "A"; // 默认值
+    }
+    private static String getNextSuffix(String currentSuffix) {
+        char[] chars = currentSuffix.toCharArray();
+        int i = chars.length - 1;
+
+        // 从右向左遍历，模拟进位逻辑
+        while (i >= 0 && chars[i] == 'Z') {
+            chars[i] = 'A';
+            i--;
+        }
+
+        if (i >= 0) {
+            chars[i]++;
+        } else {
+            // 所有字符都是 'Z'，则添加一个 'A'
+            return "A" + new String(chars);
+        }
+
+        return new String(chars);
+    }
+
+    public static void main(String[] args) {
+        String fullAlias = extractSuffix("test_deviceAF_不好A");
+        String nextSuffix = getNextSuffix(fullAlias);
+        System.out.println(nextSuffix);
+    }
+
+
 }
