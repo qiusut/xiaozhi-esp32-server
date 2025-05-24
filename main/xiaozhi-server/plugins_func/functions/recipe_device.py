@@ -8,17 +8,35 @@ from plugins_func.register import register_function, ToolType, ActionResponse, A
 TAG = __name__
 logger = setup_logging()
 
+pvt_recipe_pre = "$u$"
+
+def get_recipe_names(self):
+    names = redisClient.hkeys("recipe:nameMap")
+    device_id = self.headers.get("device-id", "")
+    private_name  = redisClient.hkeys("device:"+device_id+":nameMap", device_id)
+    for name in private_name:
+        if name in names:
+            names.append("私房菜"+name)
+        else:
+            names.append(name)
+    return names
+
+
 # 设备控制
 recipe_device_function_desc = {
     "type": "function",
     "function": {
         "name": "recipe_device",
         "description": (
-            "用于查询用户可烹饪的菜品列表，或根据输入发起对某道菜的烹饪操作。"
+            "用于查询用户可烹饪的菜品列表，以及用户想要发起对某道菜的烹饪操作，"
+            "或想要做/炒/蒸/煮/烧/焖某道菜，"
             "支持以下两种操作：\n"
             "1. 查询模式（action:get）：返回当前系统支持的所有菜品。\n"
-            "2. 烹饪模式（action:make）：根据提供的菜品名称进行精确或模糊匹配，并发送烹饪指令。\n\n"
+            "2. 烹饪模式（action:make）：根据提供的菜品名称进行精确或模糊匹配，返回匹配到的菜品名称,比如用户说做个炒饭/抄个饭/做个。\n"
+            "用户可进行多轮选择，如用户发送做个炒饭,系统匹配到蛋炒饭,杭椒炒饭返回，用户可以指定第一个或第二个进行再次匹配，匹配到就返回对应的菜品名称"
             f"当前支持的菜品有：{', '.join(redisClient.hkeys('recipe:nameMap'))}"
+            "注意:当用户指定第一个或第二个这样类似的指令时要判断用户是否是在指定菜品，如果是在指定菜品就返回对话中对应的菜品名称"
+            "特别注意:禁止偷懒,每次都需要匹配这个方法"
         ),
         "parameters": {
             "type": "object",
@@ -48,6 +66,14 @@ recipe_device_function_desc = {
 async def _get_device_status(conn):
     """获取菜谱"""
     names = redisClient.hkeys("recipe:nameMap")
+    device_id = conn.headers.get("device-id", "")
+    user_id = redisClient.get(f"device:{device_id.replace(':', '-')}:user_id")
+    private_name  = redisClient.hkeys(f"recipe:{user_id}:nameMap")
+    for name in private_name:
+        if name in names:
+            names.append("私房菜"+name)
+        else:
+            names.append(name)
     if not names:
         raise Exception("您不能制作任何菜品")
     return f"当前能制作的菜肴为{','.join(names)}"
@@ -57,39 +83,89 @@ async def _make_device_property(conn, values=None):
         return "未匹配到任何菜肴"
 
     names = redisClient.hkeys("recipe:nameMap")
-    if not names:
-        return "菜谱中已经没有菜了"
+
+    device_id = conn.headers.get("device-id", "")
+    user_id = redisClient.get(f"device:{device_id.replace(':', '-')}:user_id")
+    private_names  = redisClient.hkeys(f"recipe:{user_id}:nameMap")
+
+    if not any([names, private_names]):
+        return "您不能制作任何菜品"
 
     # 初始化匹配结果列表
     matched_devices = []
 
     for value in values:
         # 精确匹配
-        exact_match = [e for e in names if e == value]
+        exact_match = list()
+        if names:
+            exact_match.extend([e for e in names if e == value])
 
         if len(exact_match) > 0:
             matched_devices.extend(exact_match)
             continue
+
+        #私房菜匹配
+        if private_names:
+            # 精确匹配
+            for e in private_names:
+                if e == value or "私房菜" + e == value:
+                    exact_match.append(f"{pvt_recipe_pre+e}")
+
+
+        if len(exact_match) > 0:
+            matched_devices.extend(exact_match)
+            continue
+
         # 左模糊匹配
-        left_match = [e for e in names if (e.startswith(value) and not e.endswith(value))]
+        left_match = list()
+        if names:
+            left_match.extend([e for e in names if e.startswith(value)])
+        #私房菜匹配
+        if private_names:
+            for e in private_names:
+                if e.startswith(value) or ("私房菜"+e).startswith(value):
+                    left_match.append(f"{pvt_recipe_pre+e}")
+
         # 右模糊匹配
-        right_match = [e for e in names if (not e.startswith(value) and e.endswith(value))]
+        right_match = list()
+        if names:
+            right_match.extend([e for e in names if e.endswith(value)])
+        #私房菜匹配
+        if private_names:
+            for e in private_names:
+                if e.endswith(value):
+                    right_match.append(f"{pvt_recipe_pre+e}")
 
         # 合并匹配结果
         matched_devices.extend(left_match + right_match)
 
+
     if len(matched_devices)==0:
         response = f"暂不支持制作{','.join(values)}"
     elif len(matched_devices)==1:
-        info_str = redisClient.hget("recipe:nameMap",matched_devices[0])
+        matched_recipe = matched_devices[0]
+        if matched_recipe.startswith(pvt_recipe_pre):
+            info_str = redisClient.hget(f"recipe:{user_id}:nameMap",matched_recipe.replace(pvt_recipe_pre,""))
+        else:
+            info_str = redisClient.hget("recipe:nameMap",matched_recipe)
         info_dict =  json.loads(info_str)
         if isinstance(info_dict, str):
             info_dict = json.loads(info_dict)
         send_message = json.dumps({"type": "recipe", "recipe": info_dict})
         await conn.websocket.send(send_message)
-        response = f"制作{matched_devices[0]}指令发送成功"
+        response = f"制作{matched_recipe.replace(pvt_recipe_pre,'私房菜')}指令发送成功"
     else :
-        response = f"为您匹配到{len(matched_devices)}个菜肴,分别为{','.join(matched_devices)}您要烹饪哪一个？"
+        ret_names = str()
+        for matched_recipe in matched_devices:
+            if ret_names:
+                ret_names+=","
+            if matched_recipe.startswith(pvt_recipe_pre):
+                matched_recipe = matched_recipe.replace(pvt_recipe_pre,"")
+                if matched_recipe in matched_devices:
+                    matched_recipe = "私房菜"+matched_recipe
+            ret_names+=matched_recipe
+
+        response = f"为您匹配到{len(matched_devices)}个菜肴,分别为{ret_names}您要烹饪哪一个？"
 
     return response
 
