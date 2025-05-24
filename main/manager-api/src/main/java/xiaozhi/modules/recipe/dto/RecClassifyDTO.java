@@ -10,7 +10,6 @@ import java.util.Date;
 
 @Data
 @EqualsAndHashCode(callSuper = false)
-@TableName("rec_classify")
 @Schema(description = "菜谱分类")
 public class RecClassifyDTO {
 

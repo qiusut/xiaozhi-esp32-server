@@ -1,5 +1,6 @@
 package xiaozhi.modules.recipe.service;
 
+import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,8 @@ public interface RecInfoService extends IService<RecInfoEntity> {
     List<RecInfoVO> toVoList(List<RecInfoEntity> list);
 
     String sendRecipe(String device_mac, String id);
+
+    JSONObject getUserRecipe(String device_mac);
 
     void initRedis();
 }

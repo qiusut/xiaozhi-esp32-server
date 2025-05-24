@@ -1,5 +1,8 @@
 package xiaozhi.modules.recipe.controller;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,14 +17,19 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.recipe.dto.RecInfoDTO;
 import xiaozhi.modules.recipe.entity.RecInfoEntity;
+import xiaozhi.modules.recipe.entity.RecommendEntity;
 import xiaozhi.modules.recipe.service.RecClassifyService;
 import xiaozhi.modules.recipe.service.RecInfoService;
 import xiaozhi.modules.recipe.service.RecProcessService;
+import xiaozhi.modules.recipe.service.RecommendService;
 import xiaozhi.modules.recipe.vo.RecInfoServerVO;
 import xiaozhi.modules.recipe.vo.RecInfoVO;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 菜单信息管理
@@ -32,6 +40,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class RecInfoController {
     private final RecInfoService recInfoService;
+
+    private final RecommendService recommendService;
 
     @GetMapping("/page")
     @Operation(operationId = "分页查询")
@@ -91,4 +101,10 @@ public class RecInfoController {
     public Result<String> sendRecipe(@PathVariable("device_mac") String device_mac,@PathVariable("id") String id) {
         return new Result<String>().ok(recInfoService.sendRecipe(device_mac, id));
     }
+
+    /*@GetMapping("/getUserRecipe/{device_mac}")
+    @Operation(operationId = "获取私人菜谱")
+    public Result<JSONObject> getUserRecipe(@PathVariable("device_mac") String device_mac) {
+        return new Result<JSONObject>().ok(recInfoService.getUserRecipe(device_mac));
+    }*/
 }

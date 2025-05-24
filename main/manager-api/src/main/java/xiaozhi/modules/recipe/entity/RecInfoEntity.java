@@ -30,8 +30,11 @@ public class RecInfoEntity {
     @Schema(description = "参考热量")
     private String referHot;
 
-    //@Schema(description = "步骤")
-    //private String process;
+    @Schema(description = "所属用户")
+    private Long userId;
+
+    @Schema(description = "所属范围，0：公共，1：个人")
+    private Integer scope;
 
     @Schema(description = "菜谱详情")
     private String detail;

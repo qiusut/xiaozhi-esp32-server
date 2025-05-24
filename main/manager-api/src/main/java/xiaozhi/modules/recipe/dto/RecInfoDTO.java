@@ -26,6 +26,12 @@ public class RecInfoDTO {
     @Schema(description = "菜谱详情")
     private String detail;
 
+    @Schema(description = "所属用户")
+    private Long userId;
+
+    @Schema(description = "所属范围，0：公共，1：个人")
+    private Integer scope;
+
     @Schema(description = "状态，0禁用，1正常")
     private Integer status;
 

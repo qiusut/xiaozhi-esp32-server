@@ -35,11 +35,20 @@ public class RecInfoVO {
     @Schema(description = "菜谱详情")
     private String detail;
 
+    @Schema(description = "所属用户")
+    private Long userId;
+
+    @Schema(description = "所属范围，0：公共，1：个人")
+    private Integer scope;
+
     @Schema(description = "状态，0禁用，1正常")
     private Integer status;
 
     @Schema(description = "步骤")
     private List<RecProcessVO> processVOS;
+
+    @Schema(description = "审核状态，0:草稿，1推荐中，2：推荐成功,3:驳回")
+    private Integer commendStatus;
 
     @Schema(description = "更新时间")
     @JsonFormat(pattern = DateUtils.DATE_TIME_PATTERN,timezone="GMT+8")

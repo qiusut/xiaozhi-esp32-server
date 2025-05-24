@@ -9,6 +9,7 @@ import cn.hutool.http.HttpUtil;
 import cn.hutool.http.Method;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -19,17 +20,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
+import xiaozhi.common.user.UserDetail;
 import xiaozhi.modules.agent.dao.AgentDao;
 import xiaozhi.modules.agent.entity.AgentEntity;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.recipe.dao.RecInfoDao;
+import xiaozhi.modules.recipe.dao.RecommendDao;
 import xiaozhi.modules.recipe.dto.RecInfoDTO;
 import xiaozhi.modules.recipe.dto.RecProcessDTO;
-import xiaozhi.modules.recipe.entity.RecActionEntity;
-import xiaozhi.modules.recipe.entity.RecClassifyEntity;
-import xiaozhi.modules.recipe.entity.RecInfoEntity;
-import xiaozhi.modules.recipe.entity.RecProcessEntity;
+import xiaozhi.modules.recipe.entity.*;
 import xiaozhi.modules.recipe.service.RecActionService;
 import xiaozhi.modules.recipe.service.RecClassifyService;
 import xiaozhi.modules.recipe.service.RecInfoService;
@@ -37,6 +37,7 @@ import xiaozhi.modules.recipe.service.RecProcessService;
 import xiaozhi.modules.recipe.vo.RecInfoServerVO;
 import xiaozhi.modules.recipe.vo.RecInfoVO;
 import xiaozhi.modules.recipe.vo.RecProcessVO;
+import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.sys.service.SysParamsService;
 
 import java.util.ArrayList;
@@ -67,6 +68,9 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     private DeviceDao deviceDao;
 
     @Resource
+    private RecommendDao recommendDao;
+
+    @Resource
     private RedisTemplate<String, Object> redisTemplate;
 
     @Value("${spring.profiles.active}")
@@ -76,9 +80,21 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     @Transactional(rollbackFor = Exception.class)
     public void add(RecInfoDTO dto){
         String name =  dto.getName();
-        Assert.isFalse(this.exists(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getName, name)), "菜谱名称已存在");
+        LambdaQueryWrapper<RecInfoEntity> queryWrapper = Wrappers.lambdaQuery(RecInfoEntity.class);
+        queryWrapper.eq(RecInfoEntity::getName, name);
+        if(dto.getScope().equals(1)){
+            queryWrapper.eq(RecInfoEntity::getScope,  1);
+            queryWrapper.eq(RecInfoEntity::getUserId, SecurityUser.getUser().getId());
+        }else {
+            queryWrapper.eq(RecInfoEntity::getScope, 0);
+        }
+        boolean exists = this.exists(queryWrapper);
+        Assert.isFalse(exists, "菜谱名称已存在");
 
         RecInfoEntity entity = BeanUtil.copyProperties(dto, RecInfoEntity.class);
+        if(ObjectUtil.equals(entity.getScope(), 1)){
+            entity.setUserId(SecurityUser.getUser().getId());
+        }
         this.save(entity);
         List<RecProcessDTO> processDTOS = dto.getProcessDTOS();
         if(CollectionUtil.isNotEmpty(processDTOS)){
@@ -97,7 +113,18 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     @Override
     public void edit(RecInfoVO vo){
         RecInfoEntity entity = this.getById(vo.getId());
-        Assert.isFalse(!StrUtil.equals(entity.getName(), vo.getName())&&this.exists(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getName, vo.getName())), "菜谱名称已存在");
+        if(!StrUtil.equals(entity.getName(), vo.getName())){
+            LambdaQueryWrapper<RecInfoEntity> queryWrapper = Wrappers.lambdaQuery(RecInfoEntity.class);
+            queryWrapper.eq(RecInfoEntity::getName, vo.getName());
+            if(vo.getScope().equals(1)){
+                queryWrapper.eq(RecInfoEntity::getScope,  1);
+                queryWrapper.eq(RecInfoEntity::getUserId, SecurityUser.getUser().getId());
+            }else {
+                queryWrapper.eq(RecInfoEntity::getScope, 0);
+            }
+            boolean exists = this.exists(queryWrapper);
+            Assert.isFalse(exists, "菜谱名称已存在");
+        }
 
         entity = BeanUtil.copyProperties(vo, RecInfoEntity.class);
         this.updateById(entity);
@@ -145,7 +172,17 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
             ids.add(classifyId);
             wrapper.lambda().in(RecInfoEntity::getClassifyId, ids);
         }
-        wrapper.lambda().orderByDesc(RecInfoEntity::getCreateDate);
+
+        if(params.containsKey("scope")){
+            wrapper.lambda().eq(RecInfoEntity::getScope, params.get("scope"));
+        }
+
+        UserDetail user = SecurityUser.getUser();
+        wrapper.lambda().and(e->{
+            e.eq(RecInfoEntity::getUserId, user.getId()).or().eq(RecInfoEntity::getScope, 0);
+        });
+
+        wrapper.lambda().orderByAsc(RecInfoEntity::getScope).orderByDesc(RecInfoEntity::getCreateDate);
 
         Page<RecInfoEntity> page = new Page<>(curPage, limit);
 
@@ -201,6 +238,11 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
             if(CollectionUtil.isNotEmpty(classifyList)){
                 classifyMap = classifyList.stream().collect(Collectors.toMap(RecClassifyEntity::getId, RecClassifyEntity::getName));
             }
+            List<RecommendEntity> recommends = recommendDao.selectList(Wrappers.<RecommendEntity>lambdaQuery().in(RecommendEntity::getInfoId,ids).orderByDesc(RecommendEntity::getCreateDate));
+            Map<String,Integer> commend_map = new HashMap<>();
+            if (CollectionUtil.isNotEmpty(recommends)){
+                commend_map = recommends.stream().collect(Collectors.toMap(RecommendEntity::getInfoId, RecommendEntity::getAuditStatus,(existing, replacement) -> existing));
+            }
             for (RecInfoVO recInfoVO : recInfoVOS){
                 recInfoVO.setClassifyName(classifyMap.get(recInfoVO.getClassifyId()));
                 if(processMap.containsKey(recInfoVO.getId())){
@@ -217,6 +259,9 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                         processVOS.add(processVO);
                     }
                     recInfoVO.setProcessVOS(processVOS);
+                }
+                if(recInfoVO.getScope().equals(1)&&commend_map.containsKey(recInfoVO.getId())){
+                    recInfoVO.setCommendStatus(commend_map.get(recInfoVO.getId()));
                 }
             }
         }
@@ -247,6 +292,28 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                 .execute().body();
     }
 
+    @Override
+    public JSONObject getUserRecipe(String device_mac){
+        JSONObject jsonObject = new JSONObject();
+        DeviceEntity deviceEntity =deviceDao.selectById(device_mac);
+        if(deviceEntity!=null){
+            Long userId = deviceEntity.getUserId();
+            List<RecInfoEntity> list = this.list(Wrappers.lambdaQuery(RecInfoEntity.class)
+                    .eq(RecInfoEntity::getScope, 1)
+                    .eq(RecInfoEntity::getStatus, 1)
+                    .eq(RecInfoEntity::getUserId, userId));
+            if (CollectionUtil.isNotEmpty(list)){
+                List<RecInfoVO> recInfoVOS = this.toVoList(list);
+
+                for (RecInfoVO item : recInfoVOS) {
+                    RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
+                    jsonObject.set(item.getName(), recInfoVO);
+                }
+            }
+        }
+        return jsonObject;
+    }
+
 
     @Override
     public void initRedis(){
@@ -255,35 +322,50 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         if(CollectionUtil.isNotEmpty(list)) {
             List<RecInfoVO> recInfoVOS = this.toVoList(list);
             JSONObject jsonObject = new JSONObject();
+            Map<Long,List<RecInfoVO>> userMap = new HashMap<>();
 
             for (RecInfoVO item : recInfoVOS) {
-                RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
-                /*for(RecProcessVO processVO : item.getProcessVOS()){
-                    for(RecProcessVO.Action action : processVO.getActions()){
-                        Map<String,String> parameters = action.getParameters();
-                        parameters.put("type",action.getName());
-                        action.setParameters(parameters);
-                    }
-                }*/
-
-                jsonObject.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
+                if(item.getScope().equals(0)){
+                    RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
+                    jsonObject.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
+                }else {
+                    List<RecInfoVO> recInfoVOList = userMap.getOrDefault(item.getUserId(), new ArrayList<>());
+                    recInfoVOList.add(item);
+                    userMap.put(item.getUserId(), recInfoVOList);
+                }
+            }
+            if(!jsonObject.isEmpty()){
+                redisTemplate.delete(key_prefix + "nameMap");
                 redisTemplate.opsForHash().putAll(key_prefix + "nameMap", jsonObject);
             }
-        }
-
-        List<AgentEntity> agentList = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class).eq(AgentEntity::getIsRecipe, 1));
-        if(CollectionUtil.isNotEmpty(agentList)){
-            List<String> deviceIds =deviceDao.selectObjs(new QueryWrapper<DeviceEntity>().lambda()
-                    .in(DeviceEntity::getAgentId, agentList.stream().map(AgentEntity::getId).toList())
-                    .select(DeviceEntity::getMacAddress)
-            );
-            if (CollectionUtil.isNotEmpty(deviceIds)){
-                deviceIds.forEach(e->{
-                    redisTemplate.opsForValue().set("device:"+e.replace(":","-")+":recipe_switch", 1);
-                });
-
+            if(!userMap.isEmpty()){
+                for (Map.Entry<Long, List<RecInfoVO>> entry : userMap.entrySet()) {
+                    JSONObject jsonObject1 = new JSONObject();
+                    for (RecInfoVO item : entry.getValue()) {
+                        RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
+                        jsonObject1.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
+                    }
+                    redisTemplate.delete(key_prefix + entry.getKey() + ":nameMap");
+                    redisTemplate.opsForHash().putAll(key_prefix + entry.getKey() + ":nameMap", jsonObject1);
+                }
             }
         }
+
+        List<AgentEntity> agentList = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class));
+        Map<String, Integer> agentMap = new HashMap<>();
+        if(CollectionUtil.isNotEmpty(agentList)){
+            agentMap = agentList.stream().collect(Collectors.toMap(AgentEntity::getId, AgentEntity::getIsRecipe));
+
+            List<DeviceEntity> deviceEntityList = deviceDao.selectList(Wrappers.lambdaQuery(DeviceEntity.class));
+            if (CollectionUtil.isNotEmpty(deviceEntityList)){
+                for (DeviceEntity e : deviceEntityList){
+                    redisTemplate.opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":recipe_switch", agentMap.get(e.getAgentId()));
+                    redisTemplate.opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":user_id", e.getUserId());
+                }
+            }
+        }
+
+
 
 
     }
