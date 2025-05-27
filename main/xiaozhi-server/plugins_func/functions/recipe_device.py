@@ -63,7 +63,7 @@ recipe_device_function_desc = {
                 },
                 "isChoice": {
                     "type": "boolean",
-                    "description": "默认为false,当上一句是assistant询问用户要烹饪哪一个，用户回复指定第一个或第二个或直接指定菜名这样类似的指令时为true"
+                    "description": "默认为false,当上一句是assistant询问用户要烹饪哪一个，用户回复指定第一个或第二个或直接指定菜名时为true"
                 }
             },
             "required": ["action", "values"]
@@ -164,7 +164,8 @@ async def _make_device_property(conn, values=None,isChoice=False):
             info_dict = json.loads(info_dict)
         send_message = json.dumps({"type": "recipe", "recipe": info_dict})
         await conn.websocket.send(send_message)
-        response = f"制作{matched_recipe.replace(pvt_recipe_pre,pvt_recipe_pre_zh)}指令发送成功"
+        response = None
+        #response = f"制作{matched_recipe.replace(pvt_recipe_pre,pvt_recipe_pre_zh)}指令发送成功"
     else :
         ret_names = str()
         for matched_recipe in matched_devices:
@@ -187,9 +188,12 @@ def _recipe_device_action(conn, func, *args, **kwargs):
         func(conn, *args, **kwargs), conn.loop)
     try:
         response = future.result()
-        logger.bind(tag=TAG).info(f"{response}")
+        action = Action.REQLLM
+        if response:
+            action = Action.RESPONSE
+            logger.bind(tag=TAG).info(f"{response}")
 
-        return ActionResponse(action=Action.RESPONSE, result="执行成功", response=response)
+        return ActionResponse(action=action, result="执行成功", response=response)
     except Exception as e:
         logger.bind(tag=TAG).error(f"{e}")
         return ActionResponse(action=Action.RESPONSE, result=None, response=f"{e}")
