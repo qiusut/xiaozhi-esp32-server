@@ -5,7 +5,6 @@ import java.util.Objects;
 
 import jakarta.validation.ConstraintViolationException;
 import org.apache.shiro.authz.UnauthorizedException;
-import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
