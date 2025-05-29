@@ -5,6 +5,7 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.modules.recipe.dao.RecommendDao;
+import xiaozhi.modules.recipe.dto.RecommendDTO;
 import xiaozhi.modules.recipe.entity.RecInfoEntity;
 import xiaozhi.modules.recipe.entity.RecProcessEntity;
 import xiaozhi.modules.recipe.entity.RecommendEntity;
@@ -81,6 +83,18 @@ public class RecommendServiceImpl extends ServiceImpl<RecommendDao, RecommendEnt
         return recommendVOS;
     }
 
+    @Override
+    public void reported(RecommendDTO dto) {
+        RecommendEntity entity = BeanUtil.copyProperties(dto, RecommendEntity.class);
+        entity.setAuditStatus(1);
+        entity.setUserId(SecurityUser.getUser().getId());
+        RecInfoEntity infoEntity = recInfoService.getById(entity.getInfoId());
+        boolean exists = recInfoService.exists(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getScope,  0).eq(RecInfoEntity::getName, infoEntity.getName()));
+        Assert.isFalse(exists, "该菜谱名称已存在");
+        this.save(entity);
+    }
+
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -97,6 +111,9 @@ public class RecommendServiceImpl extends ServiceImpl<RecommendDao, RecommendEnt
         String infoId = entity.getInfoId();
         RecInfoEntity infoEntity = recInfoService.getById(infoId);
         Assert.notNull(infoEntity, "菜谱已不存在");
+
+        boolean exists = recInfoService.exists(Wrappers.lambdaQuery(RecInfoEntity.class).eq(RecInfoEntity::getScope,  0).eq(RecInfoEntity::getName, infoEntity.getName()));
+        Assert.isFalse(exists, "该菜谱名称已存在");
 
         RecInfoEntity public_Info = BeanUtil.copyProperties(infoEntity,
                 RecInfoEntity.class

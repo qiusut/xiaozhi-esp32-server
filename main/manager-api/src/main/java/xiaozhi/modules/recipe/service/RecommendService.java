@@ -2,6 +2,7 @@ package xiaozhi.modules.recipe.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import xiaozhi.modules.recipe.dto.RecommendDTO;
 import xiaozhi.modules.recipe.entity.RecActionEntity;
 import xiaozhi.modules.recipe.entity.RecommendEntity;
 import xiaozhi.modules.recipe.vo.RecommendVO;
@@ -19,5 +20,7 @@ public interface RecommendService extends IService<RecommendEntity> {
     List<RecommendVO> toListVO(List<RecommendEntity> entities);
 
     public void pass(String id, String auditIdea);
+
+    public void reported(RecommendDTO dto);
 
 }

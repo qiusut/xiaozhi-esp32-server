@@ -82,10 +82,7 @@ public class RecommendController {
     @LogOperation("推荐上报")
     //@RequiresPermissions("sys:role:superAdmin")
     public Result<Void> reported(@RequestBody RecommendDTO dto) {
-        RecommendEntity entity = BeanUtil.copyProperties(dto, RecommendEntity.class);
-        entity.setAuditStatus(1);
-        entity.setUserId(SecurityUser.getUser().getId());
-        recommendService.save(entity);
+        recommendService.reported(dto);
         return new Result<Void>();
     }
 
