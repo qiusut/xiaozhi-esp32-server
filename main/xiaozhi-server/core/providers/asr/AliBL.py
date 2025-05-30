@@ -8,10 +8,13 @@ from typing import Optional, Tuple, List
 
 import dashscope
 import opuslib_next
+import pyaudio
 from dashscope.audio.asr import *
 
 from config.logger import setup_logging
 from core.providers.asr.base import ASRProviderBase
+
+from core.providers.asr.dto.dto import InterfaceType
 
 TAG = __name__
 logger = setup_logging()
@@ -20,6 +23,7 @@ sample_rate = 16000
 class ASRProvider(ASRProviderBase):
     def __init__(self, config: dict, delete_audio_file: bool):
         super().__init__()
+        self.interface_type = InterfaceType.NON_STREAM
         self.model = config.get("model")
         self.output_dir = config.get("output_dir")
         self.seg_duration = 12800
@@ -30,25 +34,12 @@ class ASRProvider(ASRProviderBase):
         # 确保输出目录存在
         os.makedirs(self.output_dir, exist_ok=True)
 
-    def save_audio_to_file(self, pcm_data: List[bytes], session_id: str) -> str:
-        """将Opus音频数据解码并保存为WAV文件"""
-        module_name = __name__.split(".")[-1]
-        file_name = f"asr_{module_name}_{session_id}_{uuid.uuid4()}.wav"
-        file_path = os.path.join(self.output_dir, file_name)
-
-        with wave.open(file_path, "wb") as wf:
-            wf.setnchannels(1)
-            wf.setsampwidth(2)  # 2 bytes = 16-bit
-            wf.setframerate(sample_rate)
-            wf.writeframes(b"".join(pcm_data))
-
-        return file_path
 
     async def _send_request_gummy(self, audio_data, segment_size: int) -> Optional[str]:
         """Send request to Aliyun ASR service."""
         try:
             # 创建回调对象
-            callback = CallbackGummy()
+            callback = self.CallbackGummy(self.interface_type)
 
             # 初始化翻译识别聊天对象
             translator = TranslationRecognizerChat(
@@ -87,7 +78,7 @@ class ASRProvider(ASRProviderBase):
     async def _send_request_paraformer(self, audio_data, segment_size: int) -> Optional[str]:
         try:
             # 创建回调对象
-            callback = CallbackParaformer()
+            callback = self.CallbackParaformer()
 
             # 初始化翻译识别聊天对象
             recognition = Recognition(model=self.model,
@@ -193,63 +184,85 @@ class ASRProvider(ASRProviderBase):
             return "", file_path
 
 
-class CallbackGummy(TranslationRecognizerCallback):
-    def __init__(self):
-        super().__init__()
-        self.transcription_result = None
+    mic = None
+    stream = None
 
-    def on_open(self) -> None:
-        print("TranslationRecognizerCallback open.")
+    class CallbackGummy(TranslationRecognizerCallback):
+        def __init__(self,interface_type):
+            super().__init__()
+            self.transcription_result = None
+            self.interface_type = interface_type
 
-    def on_close(self) -> None:
-        print("TranslationRecognizerCallback close.")
+        def on_open(self) -> None:
+            print("TranslationRecognizerCallback open.")
+            if self.interface_type == InterfaceType.STREAM:
+                global mic
+                global stream
+                mic = pyaudio.PyAudio()
+                stream = mic.open(
+                    format=pyaudio.paInt16, channels=1, rate=16000, input=True
+                )
 
-    def on_event(
-            self,
-            request_id,
-            transcription_result: TranscriptionResult,
-            translation_result: TranslationResult,
-            usage,
-    ) -> None:
-        print("request id: ", request_id)
-        print("usage: ", usage)
-        if translation_result is not None:
-            print(
-                "translation_languages: ",
-                translation_result.get_language_list(),
-            )
-            english_translation = translation_result.get_translation("en")
-            print("sentence id: ", english_translation.sentence_id)
-            print("translate to english: ", english_translation.text)
-        if transcription_result is not None:
-            print("sentence id: ", transcription_result.sentence_id)
-            print("transcription: ", transcription_result.text)
-            logger.bind(tag=TAG).info(f"阿里云百炼语音识别调用成功transcription_result.text successful - text: {transcription_result.text}")
-            self.transcription_result = transcription_result
 
-    def on_error(self, message) -> None:
-        print('error: {}'.format(message))
 
-    def on_complete(self) -> None:
-        print('TranslationRecognizerCallback complete')
+        def on_close(self) -> None:
+            print("TranslationRecognizerCallback close.")
+            if self.interface_type == InterfaceType.STREAM:
+                global mic
+                global stream
+                print("TranslationRecognizerCallback close.")
+                stream.stop_stream()
+                stream.close()
+                mic.terminate()
+                stream = None
+                mic = None
 
-class CallbackParaformer(RecognitionCallback):
-    def __init__(self):
-        super().__init__()
-        self.transcription_result = None
+        def on_event(
+                self,
+                request_id,
+                transcription_result: TranscriptionResult,
+                translation_result: TranslationResult,
+                usage,
+        ) -> None:
+            print("request id: ", request_id)
+            print("usage: ", usage)
+            if translation_result is not None:
+                print(
+                    "translation_languages: ",
+                    translation_result.get_language_list(),
+                )
+                english_translation = translation_result.get_translation("en")
+                print("sentence id: ", english_translation.sentence_id)
+                print("translate to english: ", english_translation.text)
+            if transcription_result is not None:
+                print("sentence id: ", transcription_result.sentence_id)
+                print("transcription: ", transcription_result.text)
+                logger.bind(tag=TAG).info(f"阿里云百炼语音识别调用成功transcription_result.text successful - text: {transcription_result.text}")
+                self.transcription_result = transcription_result
 
-    def on_open(self) -> None:
-        print("RecognitionCallback open.")
+        def on_error(self, message) -> None:
+            print('error: {}'.format(message))
 
-    def on_close(self) -> None:
-        print("RecognitionCallback close.")
+        def on_complete(self) -> None:
+            print('TranslationRecognizerCallback complete')
 
-    def on_event(self, result: RecognitionResult) -> None:
-        print('RecognitionCallback sentence: ', result.get_sentence())
-        self.transcription_result = result.get_sentence()
+    class CallbackParaformer(RecognitionCallback):
+        def __init__(self):
+            super().__init__()
+            self.transcription_result = None
 
-    def on_error(self, result: RecognitionResult) -> None:
-        print('error: {}'.format(result.get_sentence()))
+        def on_open(self) -> None:
+            print("RecognitionCallback open.")
 
-    def on_complete(self) -> None:
-        print('RecognitionCallback complete')
+        def on_close(self) -> None:
+            print("RecognitionCallback close.")
+
+        def on_event(self, result: RecognitionResult) -> None:
+            print('RecognitionCallback sentence: ', result.get_sentence())
+            self.transcription_result = result.get_sentence()
+
+        def on_error(self, result: RecognitionResult) -> None:
+            print('error: {}'.format(result.get_sentence()))
+
+        def on_complete(self) -> None:
+            print('RecognitionCallback complete')
