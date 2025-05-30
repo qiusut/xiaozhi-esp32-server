@@ -16,6 +16,9 @@ class TTSProvider(TTSProviderBase):
         else:
             self.voice = config.get("voice")
 
+        if "v2" in self.model and "v2" not in self.voice:
+            self.voice +=  "_v2"
+
         dashscope.api_key = config.get("api_key")
 
     def generate_filename(self, extension=".mp3"):
@@ -36,7 +39,7 @@ class TTSProvider(TTSProviderBase):
                 synthesizer.get_last_request_id(),
                 synthesizer.get_first_package_delay()))
 
-            with open(output_file, "ab") as f:
+            with open(output_file, "wb") as f:
                 f.write(audio)
 
         except Exception as e:
