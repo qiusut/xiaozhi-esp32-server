@@ -164,8 +164,8 @@ async def _make_device_property(conn, values=None,isChoice=False):
             info_dict = json.loads(info_dict)
         send_message = json.dumps({"type": "recipe", "recipe": info_dict})
         await conn.websocket.send(send_message)
-        response = None
-        #response = f"制作{matched_recipe.replace(pvt_recipe_pre,pvt_recipe_pre_zh)}指令发送成功"
+        #response = None
+        response = f"制作{matched_recipe.replace(pvt_recipe_pre,pvt_recipe_pre_zh)}指令发送成功"
     else :
         ret_names = str()
         for matched_recipe in matched_devices:
@@ -187,13 +187,12 @@ def _recipe_device_action(conn, func, *args, **kwargs):
     future = asyncio.run_coroutine_threadsafe(
         func(conn, *args, **kwargs), conn.loop)
     try:
-        response = future.result()
+        result = future.result()
         action = Action.REQLLM
-        if response:
-            action = Action.RESPONSE
-            logger.bind(tag=TAG).info(f"{response}")
+        if result:
+            logger.bind(tag=TAG).info(f"{result}")
 
-        return ActionResponse(action=action, result="执行成功", response=response)
+        return ActionResponse(action=action, result=result, response=None)
     except Exception as e:
         logger.bind(tag=TAG).error(f"{e}")
         return ActionResponse(action=Action.RESPONSE, result=None, response=f"{e}")
