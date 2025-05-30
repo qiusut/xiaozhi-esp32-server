@@ -1,19 +1,15 @@
 import io
 import os
 import time
-import uuid
 import wave
-from http import HTTPStatus
 from typing import Optional, Tuple, List
 
 import dashscope
-import opuslib_next
 import pyaudio
 from dashscope.audio.asr import *
 
 from config.logger import setup_logging
 from core.providers.asr.base import ASRProviderBase
-
 from core.providers.asr.dto.dto import InterfaceType
 
 TAG = __name__
@@ -78,7 +74,7 @@ class ASRProvider(ASRProviderBase):
     async def _send_request_paraformer(self, audio_data, segment_size: int) -> Optional[str]:
         try:
             # 创建回调对象
-            callback = self.CallbackParaformer()
+            callback = self.CallbackParaformer(self.interface_type)
 
             # 初始化翻译识别聊天对象
             recognition = Recognition(model=self.model,
@@ -200,7 +196,7 @@ class ASRProvider(ASRProviderBase):
                 global stream
                 mic = pyaudio.PyAudio()
                 stream = mic.open(
-                    format=pyaudio.paInt16, channels=1, rate=16000, input=True
+                    format=pyaudio.paInt16, channels=1, rate=sample_rate, input=True
                 )
 
 
@@ -247,15 +243,32 @@ class ASRProvider(ASRProviderBase):
             print('TranslationRecognizerCallback complete')
 
     class CallbackParaformer(RecognitionCallback):
-        def __init__(self):
+        def __init__(self,interface_type):
             super().__init__()
             self.transcription_result = None
+            self.interface_type = interface_type
 
         def on_open(self) -> None:
             print("RecognitionCallback open.")
+            if self.interface_type == InterfaceType.STREAM:
+                global mic
+                global stream
+                mic = pyaudio.PyAudio()
+                stream = mic.open(format=pyaudio.paInt16,
+                                  channels=1,
+                                  rate=sample_rate,
+                                  input=True)
 
         def on_close(self) -> None:
             print("RecognitionCallback close.")
+            if self.interface_type == InterfaceType.STREAM:
+                global mic
+                global stream
+                stream.stop_stream()
+                stream.close()
+                mic.terminate()
+                stream = None
+                mic = None
 
         def on_event(self, result: RecognitionResult) -> None:
             print('RecognitionCallback sentence: ', result.get_sentence())
