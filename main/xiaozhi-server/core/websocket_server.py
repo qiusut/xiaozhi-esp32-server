@@ -8,9 +8,11 @@ from aiohttp import web
 from config.config_loader import get_config_from_api
 from config.logger import setup_logging
 from core.connection import ConnectionHandler
-from core.handle.iotHandle import set_iot_status
-from core.utils.util import initialize_modules, check_vad_update, check_asr_update
+from config.config_loader import get_config_from_api
+from core.utils.modules_initialize import initialize_modules
+from core.utils.util import check_vad_update, check_asr_update
 
+from core.handle.iotHandle import set_iot_status
 from core.handle.sendAudioHandle import send_stt_message,send_tts_message
 from core.handle.abortHandle import handleAbortMessage
 
