@@ -1,20 +1,16 @@
 import asyncio
-import json
-from urllib.parse import urlparse
-
 import websockets
-from aiohttp import web
-
-from config.config_loader import get_config_from_api
 from config.logger import setup_logging
 from core.connection import ConnectionHandler
 from config.config_loader import get_config_from_api
 from core.utils.modules_initialize import initialize_modules
 from core.utils.util import check_vad_update, check_asr_update
 
+import json
+from aiohttp import web
 from core.handle.iotHandle import set_iot_status
-from core.handle.sendAudioHandle import send_stt_message,send_tts_message
-from core.handle.abortHandle import handleAbortMessage
+from core.handle.sendAudioHandle import send_stt_message, send_tts_message
+
 
 TAG = __name__
 
@@ -47,21 +43,10 @@ class WebSocketServer:
         host = server_config.get("ip", "0.0.0.0")
         port = int(server_config.get("port", 8000))
 
-        #async with websockets.serve(self._handle_connection, host, port, process_request=self._http_response):
-        #    await asyncio.Future()
-
-        # 创建两个服务任务
-        ws_task = websockets.serve(
-            self._handle_connection,
-            host,
-            port,
-            process_request=self._http_response
-        )
-
-        http_task = self.httpApi()
-
-        # 并行运行两个服务
-        await asyncio.gather(ws_task, http_task)
+        async with websockets.serve(
+                self._handle_connection, host, port, process_request=self._http_response
+        ):
+            await asyncio.Future()
 
     async def _handle_connection(self, websocket):
         """处理新连接，每次创建独立的ConnectionHandler"""
@@ -140,40 +125,6 @@ class WebSocketServer:
         except Exception as e:
             self.logger.bind(tag=TAG).error(f"更新服务器配置失败: {str(e)}")
             return False
-
-    async def httpApi(self):
-        server_config = self.config["server"]
-        host = server_config.get("ip", "0.0.0.0")
-        http_url = server_config.get("http_url")
-        parsed_url = urlparse(http_url)
-        port = parsed_url.port
-        http_ws_url = server_config.get("http_ws_url", "/xiaozhi/websocket")
-
-        if port is None:
-            if parsed_url.scheme == 'http':
-                port = 80
-            elif parsed_url.scheme == 'https':
-                port = 443
-            else:
-                port = None  # 其他协议没有默认端口时设为 None 或自定义处理
-
-        if port:
-            app = web.Application()
-            # 添加路由
-            app.add_routes(
-                [
-                    web.get(http_ws_url, self.get_websocket),
-                    web.post(http_ws_url, self.send_websocket),
-                ]
-            )
-
-            # 运行服务
-            runner = web.AppRunner(app)
-            await runner.setup()
-            site = web.TCPSite(runner, host, port)
-            await site.start()
-
-            await asyncio. Future()
 
     async def get_websocket(self, request):
         status = 200

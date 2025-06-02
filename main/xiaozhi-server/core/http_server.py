@@ -8,11 +8,13 @@ TAG = __name__
 
 
 class SimpleHttpServer:
-    def __init__(self, config: dict):
+    def __init__(self, config: dict,ws_server):
         self.config = config
         self.logger = setup_logging()
         self.ota_handler = OTAHandler(config)
         self.vision_handler = VisionHandler(config)
+
+        self.ws_server = ws_server
 
     def _get_websocket_url(self, local_ip: str, port: int) -> str:
         """获取websocket地址
@@ -37,6 +39,8 @@ class SimpleHttpServer:
         host = server_config.get("ip", "0.0.0.0")
         port = int(server_config.get("http_port", 8003))
 
+        http_ws_url = server_config.get("http_ws_url", "/xiaozhi/websocket")
+
         if port:
             app = web.Application()
 
@@ -57,6 +61,14 @@ class SimpleHttpServer:
                     web.get("/mcp/vision/explain", self.vision_handler.handle_get),
                     web.post("/mcp/vision/explain", self.vision_handler.handle_post),
                     web.options("/mcp/vision/explain", self.vision_handler.handle_post),
+                ]
+            )
+
+            #添加websocket_http路由
+            app.add_routes(
+                [
+                    web.get(http_ws_url, self.ws_server.get_websocket),
+                    web.post(http_ws_url, self.ws_server.send_websocket),
                 ]
             )
 
