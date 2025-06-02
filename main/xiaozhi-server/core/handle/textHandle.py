@@ -1,6 +1,7 @@
 import json
 from core.handle.abortHandle import handleAbortMessage
 from core.handle.helloHandle import handleHelloMessage
+from core.handle.mcpHandle import handle_mcp_message
 from core.utils.util import remove_punctuation_and_length, filter_sensitive_info
 from core.handle.receiveAudioHandle import startToChat, handleAudioMessage
 from core.handle.sendAudioHandle import send_stt_message, send_tts_message
@@ -58,6 +59,7 @@ async def handleTextMessage(conn, message):
                         # 如果是唤醒词，且关闭了唤醒词回复，就不用回答
                         await send_stt_message(conn, original_text)
                         await send_tts_message(conn, "stop", None)
+                        conn.client_is_speaking = False
                     elif is_wakeup_words:
                         # 上报纯文字数据（复用ASR上报功能，但不提供音频数据）
                         enqueue_asr_report(conn, "嘿，你好呀", [])
@@ -73,6 +75,10 @@ async def handleTextMessage(conn, message):
                 asyncio.create_task(handleIotDescriptors(conn, msg_json["descriptors"]))
             if "states" in msg_json:
                 asyncio.create_task(handleIotStatus(conn, msg_json["states"]))
+        elif msg_json["type"] == "mcp":
+            conn.logger.bind(tag=TAG).info(f"收到mcp消息：{message}")
+            if "payload" in msg_json:
+                asyncio.create_task(handle_mcp_message(conn, conn.mcp_client, msg_json["payload"]))
         elif msg_json["type"] == "server":
             # 记录日志时过滤敏感信息
             conn.logger.bind(tag=TAG).info(
@@ -152,16 +158,19 @@ async def handleTextMessage(conn, message):
             # 重启服务器
             elif msg_json["action"] == "restart":
                 await conn.handle_restart(msg_json)
-        elif msg_json["type"] == "read":
-            if "text" in msg_json:
-                try:
-                    await send_stt_message(conn, msg_json["text"])
-                    future0 = conn.executor.submit(conn.speak_and_play, "en", 0)
-                    conn.tts_queue.put((future0, 0))
-                    future = conn.executor.submit(conn.speak_and_play, msg_json["text"], 1)
-                    conn.tts_queue.put((future, 1))
-                finally:
-                    await send_tts_message(conn, "stop", None)
-
+            #qiu-start
+            elif msg_json["type"] == "read":
+                if "text" in msg_json:
+                    try:
+                        await send_stt_message(conn, msg_json["text"])
+                        future0 = conn.executor.submit(conn.speak_and_play, "en", 0)
+                        conn.tts_queue.put((future0, 0))
+                        future = conn.executor.submit(conn.speak_and_play, msg_json["text"], 1)
+                        conn.tts_queue.put((future, 1))
+                    finally:
+                        await send_tts_message(conn, "stop", None)
+            #qiu-end
+        else:
+            conn.logger.bind(tag=TAG).error(f"收到未知类型消息：{message}")
     except json.JSONDecodeError:
         await conn.websocket.send(message)

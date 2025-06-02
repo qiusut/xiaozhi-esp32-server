@@ -60,10 +60,14 @@ def get_config_from_api(config):
         "secret": config["manager-api"].get("secret", ""),
     }
     config_data["redis"] = config["redis"]
+    # server的配置以本地为准
     if config.get("server"):
         config_data["server"] = {
             "ip": config["server"].get("ip", ""),
             "port": config["server"].get("port", ""),
+            "http_port": config["server"].get("http_port", ""),
+            "vision_explain": config["server"].get("vision_explain", ""),
+            "auth_key": config["server"].get("auth_key", ""),
         }
     return config_data
 
