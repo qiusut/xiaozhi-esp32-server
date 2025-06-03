@@ -33,6 +33,7 @@ class ASRProvider(ASRProviderBase):
 
     async def open_audio_channels(self, conn):
         if self.interface_type == InterfaceType.STREAM:
+            await super().open_audio_channels(conn)
             pass
         else:
             # 直接使用父类的处理逻辑
