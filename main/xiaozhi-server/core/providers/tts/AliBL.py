@@ -18,7 +18,7 @@ class TTSProvider(TTSProviderBase):
 
         if "v2" in self.model and "v2" not in self.voice:
             self.voice +=  "_v2"
-
+        self.audio_file_type = config.get("format", "mp3")
         dashscope.api_key = config.get("api_key")
 
     def generate_filename(self, extension=".mp3"):
@@ -29,18 +29,26 @@ class TTSProvider(TTSProviderBase):
     async def text_to_speak(self, text, output_file):
         try:
             synthesizer = SpeechSynthesizer(model=self.model, voice=self.voice)
-            # 确保目录存在并创建空文件
-            os.makedirs(os.path.dirname(output_file), exist_ok=True)
-            with open(output_file, "wb") as f:
-                pass
-
             audio = synthesizer.call(text)
-            print('[Metric] requestId: {}, first package delay ms: {}'.format(
-                synthesizer.get_last_request_id(),
-                synthesizer.get_first_package_delay()))
+            if output_file:
+                # 确保目录存在并创建空文件
+                os.makedirs(os.path.dirname(output_file), exist_ok=True)
+                with open(output_file, "wb") as f:
+                    pass
 
-            with open(output_file, "wb") as f:
-                f.write(audio)
+                print('[Metric] requestId: {}, first package delay ms: {}'.format(
+                    synthesizer.get_last_request_id(),
+                    synthesizer.get_first_package_delay()))
+
+                with open(output_file, "wb") as f:
+                    f.write(audio)
+            else:
+                # 返回音频二进制数据
+                audio_bytes = b""
+                async for chunk in audio.stream():
+                    if chunk["type"] == "audio":
+                        audio_bytes += chunk["data"]
+                return audio_bytes
 
         except Exception as e:
             error_msg = f"Edge TTS请求失败: {e}"
