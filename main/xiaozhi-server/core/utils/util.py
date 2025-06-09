@@ -978,6 +978,11 @@ def is_valid_image_file(file_data: bytes) -> bool:
     return False
 
 
+def sanitize_tool_name(name: str) -> str:
+    """Sanitize tool names for OpenAI compatibility."""
+    return re.sub(r"[^a-zA-Z0-9_-]", "_", name)
+
+
 def find_json(s):
     # 找到第一个 '{' 的位置
     start_index = s.find('{')
