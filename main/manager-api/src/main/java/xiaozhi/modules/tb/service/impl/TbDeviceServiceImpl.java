@@ -15,6 +15,7 @@ import jakarta.annotation.Resource;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.modules.sys.dao.SysUserDao;
 import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.service.SysParamsService;
@@ -30,7 +31,7 @@ import java.util.*;
 public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEntity> implements TbDeviceService {
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisUtils redisUtils;
 
     @Resource
     private SysParamsService sysParamsService;
@@ -193,22 +194,22 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
             parameters_tb_args_json.set("properties", properties_json);
             parameters_tb_args_json.set("required", required_json);
             jsonObject_fun.put("function_call", function_call_json);
-            rawHashPutAll("tb:device_fun:"+type+":"+random, jsonObject_fun);
+            redisUtils.rawHashPutAll("tb:device_fun:"+type+":"+random, jsonObject_fun);
         }
         deviceJson.set("funs", funs);
-        rawRightPush("tb:device", deviceJson.toString());
+        redisUtils.rawRightPush("tb:device", deviceJson.toString());
 
     }
 
     @Override
     public void initRedis(){
-        Set<String> keys = redisTemplate.keys("tb:*");
+        Set<String> keys = redisUtils.getRedisTemplate().keys("tb:*");
         if (ObjectUtil.isNotEmpty(keys)) {
-            redisTemplate.delete(keys);
+            redisUtils.getRedisTemplate().delete(keys);
         }
 
-        setRawString("tb:url", sysParamsService.getValue("tb.url", true));
-        setRawString("tb:name_desc", sysParamsService.getValue("tb.name_desc", true));
+        redisUtils.setRawString("tb:url", sysParamsService.getValue("tb.url", true));
+        redisUtils.setRawString("tb:name_desc", sysParamsService.getValue("tb.name_desc", true));
 
         List<SysUserEntity> sysUserList = sysUserDao.selectList(
                 Wrappers.<SysUserEntity>lambdaQuery()
@@ -219,8 +220,8 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
         );
 
         sysUserList.stream().forEach(sysUser -> {
-            setRawString("tb:user:"+sysUser.getId()+":username",sysUser.getTbUsername());
-            setRawString("tb:user:"+sysUser.getId()+":password",sysUser.getTbPassword());
+            redisUtils.setRawString("tb:user:"+sysUser.getId()+":username",sysUser.getTbUsername());
+            redisUtils.setRawString("tb:user:"+sysUser.getId()+":password",sysUser.getTbPassword());
         });
 
         List<TbFunctionEntity> list =this.list(Wrappers.lambdaQuery(TbFunctionEntity.class).eq(TbFunctionEntity::getStatus, 1));
@@ -230,39 +231,5 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
             }
         }
     }
-
-    public void setRawString(String key, String value) {
-        redisTemplate.execute((RedisConnection connection) -> {
-            byte[] keyBytes = key.getBytes();
-            byte[] valueBytes = value.getBytes();
-            connection.stringCommands().set(keyBytes, valueBytes);
-            return null;
-        });
-    }
-
-    public void rawRightPush(String key, String value) {
-        redisTemplate.execute((RedisConnection connection) -> {
-            byte[] keyBytes = key.getBytes();
-            byte[] valueBytes = value.getBytes();
-            connection.listCommands().rPush(keyBytes, valueBytes);
-            return null;
-        });
-    }
-
-    public void rawHashPutAll(String key, Map<String, Object> hashEntries) {
-        redisTemplate.execute((RedisConnection connection) -> {
-            byte[] keyBytes = key.getBytes();
-            for (Map.Entry<String, Object> entry : hashEntries.entrySet()) {
-                byte[] fieldBytes = entry.getKey().getBytes();
-                byte[] valueBytes = JSONUtil.toJsonStr(entry.getValue()).getBytes();
-                connection.hashCommands().hSet(keyBytes, fieldBytes, valueBytes);
-            }
-            return null;
-        });
-    }
-
-
-
-
 
 }

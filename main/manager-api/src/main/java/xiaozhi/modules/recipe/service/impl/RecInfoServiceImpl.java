@@ -20,6 +20,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import xiaozhi.common.constant.Constant;
+import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.modules.agent.dao.AgentDao;
 import xiaozhi.modules.agent.entity.AgentEntity;
@@ -71,7 +72,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
     private RecommendDao recommendDao;
 
     @Resource
-    private RedisTemplate<String, Object> redisTemplate;
+    private RedisUtils redisUtils;
 
     @Value("${spring.profiles.active}")
     private String profiles_active;
@@ -277,7 +278,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         }
         RecInfoEntity dto = this.getById(id);
         Assert.notNull(dto,"菜谱不存在");
-        Object info = redisTemplate.opsForHash().get("recipe:nameMap",dto.getName());
+        Object info = redisUtils.getRedisTemplate().opsForHash().get("recipe:nameMap",dto.getName());
         Assert.notNull(info,"菜谱不存在");
         Map<String, String> headers = new HashMap<>();
         if(StrUtil.isNotBlank(device_mac)){
@@ -335,8 +336,8 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                 }
             }
             if(!jsonObject.isEmpty()){
-                redisTemplate.delete(key_prefix + "nameMap");
-                redisTemplate.opsForHash().putAll(key_prefix + "nameMap", jsonObject);
+                redisUtils.getRedisTemplate().delete(key_prefix + "nameMap");
+                redisUtils.getRedisTemplate().opsForHash().putAll(key_prefix + "nameMap", jsonObject);
             }
             if(!userMap.isEmpty()){
                 for (Map.Entry<Long, List<RecInfoVO>> entry : userMap.entrySet()) {
@@ -345,8 +346,8 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                         RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
                         jsonObject1.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
                     }
-                    redisTemplate.delete(key_prefix + entry.getKey() + ":nameMap");
-                    redisTemplate.opsForHash().putAll(key_prefix + entry.getKey() + ":nameMap", jsonObject1);
+                    redisUtils.getRedisTemplate().delete(key_prefix + entry.getKey() + ":nameMap");
+                    redisUtils.getRedisTemplate().opsForHash().putAll(key_prefix + entry.getKey() + ":nameMap", jsonObject1);
                 }
             }
         }
@@ -359,8 +360,8 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
             List<DeviceEntity> deviceEntityList = deviceDao.selectList(Wrappers.lambdaQuery(DeviceEntity.class));
             if (CollectionUtil.isNotEmpty(deviceEntityList)){
                 for (DeviceEntity e : deviceEntityList){
-                    redisTemplate.opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":recipe_switch", agentMap.get(e.getAgentId()));
-                    redisTemplate.opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":user_id", e.getUserId());
+                    redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":recipe_switch", agentMap.get(e.getAgentId()));
+                    redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":user_id", e.getUserId());
                 }
             }
         }

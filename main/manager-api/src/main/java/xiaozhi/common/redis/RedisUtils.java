@@ -6,7 +6,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import cn.hutool.json.JSONUtil;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
@@ -23,6 +26,7 @@ import xiaozhi.common.utils.ResourcesUtils;
 @Component
 public class RedisUtils {
     @Resource
+    @Getter
     private RedisTemplate<String, Object> redisTemplate;
 
     @Autowired
@@ -190,6 +194,38 @@ public class RedisUtils {
         return redisTemplate.execute(redisScript, keys, defaultValue,expiresInSecond);
     }
 
+
+    //qiu-start
+    public void setRawString(String key, String value) {
+        redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes();
+            byte[] valueBytes = value.getBytes();
+            connection.stringCommands().set(keyBytes, valueBytes);
+            return null;
+        });
+    }
+
+    public void rawRightPush(String key, String value) {
+        redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes();
+            byte[] valueBytes = value.getBytes();
+            connection.listCommands().rPush(keyBytes, valueBytes);
+            return null;
+        });
+    }
+
+    public void rawHashPutAll(String key, Map<String, Object> hashEntries) {
+        redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes();
+            for (Map.Entry<String, Object> entry : hashEntries.entrySet()) {
+                byte[] fieldBytes = entry.getKey().getBytes();
+                byte[] valueBytes = JSONUtil.toJsonStr(entry.getValue()).getBytes();
+                connection.hashCommands().hSet(keyBytes, fieldBytes, valueBytes);
+            }
+            return null;
+        });
+    }
+    //qiu-end
 
 
 }
