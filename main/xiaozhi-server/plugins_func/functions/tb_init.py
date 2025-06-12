@@ -9,9 +9,14 @@ logger = setup_logging()
 
 TB_CACHE = {}
 
+SYS_ADMIN = 'SYS_ADMIN'
+TENANT_ADMIN = 'TENANT_ADMIN'
+CUSTOMER_USER = 'CUSTOMER_USER'
+
 userUrl = "api/auth/user"
 loginUrl = "api/auth/login"
 getCustomerDeviceInfos = "api/customer/{customer_id}/deviceInfos"
+getTenantDeviceInfos = "api/tenant/deviceInfos"
 
 def append_devices_to_prompt(conn):
     device_id = conn.headers.get("device-id", "").replace(':', '-')
@@ -19,8 +24,8 @@ def append_devices_to_prompt(conn):
     if user_id:
         init_tb_token(user_id) #初始化token
         tbuser = getTbUser(user_id)
-        customer_id = tbuser["customerId"]["id"]
-        tb_device_list = getTbDevices(user_id,customer_id)
+
+        tb_device_list = getTbDevices(user_id,tbuser)
 
         prompt = "下面是我的设备，可以通过小智控制:"
         #if len(tb_device_list) == 0:
@@ -104,10 +109,18 @@ def getTbUser(user_id):
     return json.loads(response.text)
 
 #获取tb设备
-def getTbDevices(user_id,customer_id,**kwargs):
+def getTbDevices(user_id,tbuser:dict,**kwargs):
     key_prefix = "tb:user:"+user_id
-    url = f"{redisClient.get('tb:url')}/{getCustomerDeviceInfos}?active=true&page=0&pageSize=50"
-    url = url.format(customer_id=customer_id)
+    if tbuser["authority"] == CUSTOMER_USER:
+        customer_id = tbuser["customerId"]["id"]
+        url = f"{redisClient.get('tb:url')}/{getCustomerDeviceInfos}?active=true&page=0&pageSize=50"
+        url = url.format(customer_id=customer_id)
+    elif tbuser["authority"] == TENANT_ADMIN:
+        url = f"{redisClient.get('tb:url')}/{getTenantDeviceInfos}?active=true&page=0&pageSize=50"
+    else:
+        return None
+
+
     for key,value in kwargs.items():
         url += "&"+key+"="+value
 
