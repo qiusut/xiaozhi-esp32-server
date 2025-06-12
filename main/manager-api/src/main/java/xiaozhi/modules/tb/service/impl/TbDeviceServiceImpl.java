@@ -5,7 +5,6 @@ import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -15,8 +14,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
 import org.springframework.stereotype.Service;
+import xiaozhi.modules.sys.dao.SysUserDao;
+import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.service.SysParamsService;
 import xiaozhi.modules.tb.dao.TbFunctionDao;
 import xiaozhi.modules.tb.dto.TbFunctionDTO;
@@ -35,6 +35,9 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
     @Resource
     private SysParamsService sysParamsService;
 
+    @Resource
+    private SysUserDao sysUserDao;
+
 
     private final String function_call = """
                     {
@@ -43,10 +46,18 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
                     		"name": "{name}",
                     		"description": "{description}",
                     		"parameters": {
-                    			"type": "object",
-                                "properties": "{properties}",
-                                "required": "{required}"
-                    		}
+                                "type": "object",
+                                "properties": {
+                                    "tb_args": {
+                                        "type": "object",
+                                        "properties": "{properties}",
+                                        "required": "{required}"
+                                    }
+                                },
+                                "required": [
+                                    "tb_agrs"
+                                ]
+                            }
                     	}
                     }
             """;
@@ -158,7 +169,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
             String function_call_tmp = this.function_call.replace("{name}", type+"_"+random)
                     .replace("{description}", function_call.getDescription());
             JSONObject function_call_json = JSONUtil.parseObj(function_call_tmp);
-            JSONObject parameters_json = function_call_json.getJSONObject("function").getJSONObject("parameters");
+            JSONObject parameters_tb_args_json = function_call_json.getJSONObject("function").getJSONObject("parameters").getJSONObject("properties").getJSONObject("tb_args");
 
             List<String> required_json = new ArrayList<>();
             JSONObject properties_json = new JSONObject();
@@ -179,8 +190,8 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
                     }
                 }
             }
-            parameters_json.set("properties", properties_json);
-            parameters_json.set("required", required_json);
+            parameters_tb_args_json.set("properties", properties_json);
+            parameters_tb_args_json.set("required", required_json);
             jsonObject_fun.put("function_call", function_call_json);
             rawHashPutAll("tb:device_fun:"+type+":"+random, jsonObject_fun);
         }
@@ -198,6 +209,19 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
 
         setRawString("tb:url", sysParamsService.getValue("tb.url", true));
         setRawString("tb:name_desc", sysParamsService.getValue("tb.name_desc", true));
+
+        List<SysUserEntity> sysUserList = sysUserDao.selectList(
+                Wrappers.<SysUserEntity>lambdaQuery()
+                        .isNotNull(SysUserEntity::getTbUsername)
+                        .ne(SysUserEntity::getTbUsername, "")
+                        .isNotNull(SysUserEntity::getTbPassword)
+                        .ne(SysUserEntity::getTbPassword, "")
+        );
+
+        sysUserList.stream().forEach(sysUser -> {
+            setRawString("tb:user:"+sysUser.getId()+":username",sysUser.getTbUsername());
+            setRawString("tb:user:"+sysUser.getId()+":password",sysUser.getTbPassword());
+        });
 
         List<TbFunctionEntity> list =this.list(Wrappers.lambdaQuery(TbFunctionEntity.class).eq(TbFunctionEntity::getStatus, 1));
         if(CollectionUtil.isNotEmpty(list)) {

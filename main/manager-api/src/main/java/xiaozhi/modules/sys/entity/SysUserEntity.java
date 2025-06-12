@@ -25,6 +25,16 @@ public class SysUserEntity extends BaseEntity {
      * 密码
      */
     private String password;
+
+    /**
+     * TB用户名
+     */
+    private String tbUsername;
+    /**
+     * TB密码
+     */
+    private String tbPassword;
+
     /**
      * 超级管理员 0：否 1：是
      */

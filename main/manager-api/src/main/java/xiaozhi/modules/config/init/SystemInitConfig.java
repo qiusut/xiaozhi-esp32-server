@@ -11,6 +11,7 @@ import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.modules.config.service.ConfigService;
 import xiaozhi.modules.recipe.service.RecInfoService;
 import xiaozhi.modules.sys.service.SysParamsService;
+import xiaozhi.modules.tb.service.TbDeviceService;
 
 @Configuration
 @DependsOn("liquibase")
@@ -24,6 +25,9 @@ public class SystemInitConfig {
 
     @Autowired
     private RecInfoService recInfoService;
+
+    @Autowired
+    private TbDeviceService tbDeviceService;
 
     @Autowired
     private RedisUtils redisUtils;
@@ -42,6 +46,7 @@ public class SystemInitConfig {
         sysParamsService.initServerSecret();
         configService.getConfig(false);
         recInfoService.initRedis();
+        tbDeviceService.initRedis();
         System.out.println("初始化完成");
     }
 }
