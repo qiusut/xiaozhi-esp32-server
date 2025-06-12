@@ -2,6 +2,7 @@ package xiaozhi.modules.tb.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
@@ -85,70 +86,25 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
 
     @Override
     public void addFunction(TbFunctionDTO tbFunctionDTO) {
+        String type = tbFunctionDTO.getType();
+        Assert.isFalse(this.exists(Wrappers.lambdaQuery(TbFunctionEntity.class).eq(TbFunctionEntity::getType, type)), "设备类型已存在");
         TbFunctionEntity entity = BeanUtil.toBean(tbFunctionDTO, TbFunctionEntity.class);
         this.save(entity);
         initRedis();
-
-        /*redisTemplate.multi();
-        try {
-            //String type = tbFunctionDTO.getType();
-            List<Object> allDevices = redisTemplate.opsForList().range("tb:device", 0, -1);
-            if (allDevices != null) {
-                Assert.isFalse(allDevices.stream().anyMatch(device -> {
-                    JSONObject deviceJson = JSONUtil.parseObj(device);
-                    return deviceJson.getStr("type").equals(tbFunctionDTO.getType());
-                }), "设备类型已存在");
-            }
-
-            this.saveFunction(tbFunctionDTO);
-            // 提交事务
-            redisTemplate.exec();
-        } catch (Exception e) {
-            // 回滚事务
-            redisTemplate.discard();
-            throw e;
-        }*/
-
     }
 
     @Override
     public void updateFunction(TbFunctionVO tbFunctionVO) {
+        String now_type = tbFunctionVO.getType();
+        TbFunctionEntity tbFunction = this.getById(tbFunctionVO.getId());
+        Assert.notNull(tbFunction, "设备不存在");
+        String old_type = tbFunction.getType();
+        if(!ObjectUtil.equal(old_type, now_type)){
+            Assert.isFalse(this.exists(Wrappers.lambdaQuery(TbFunctionEntity.class).eq(TbFunctionEntity::getType, now_type)), "设备类型已存在");
+        }
+
         this.updateById(BeanUtil.toBean(tbFunctionVO, TbFunctionEntity.class));
         initRedis();
-        /*redisTemplate.multi();
-        try {
-            String updateType = tbFunctionVO.getType();
-            List<Object> allDevices = redisTemplate.opsForList().range("tb:device", 0, -1);
-            JSONObject jsonObject = allDevices.stream()
-                    .map(JSONUtil::parseObj)
-                    .filter(deviceJson -> type.equals(deviceJson.getStr("type")))
-                    .findFirst()
-                    .orElse(null);
-
-            Assert.notNull(jsonObject, "设备类型不存在");
-            if(updateType.equals(type)){
-                List<String> oldFuns = jsonObject.getBeanList("funs", String.class);
-                oldFuns.stream().forEach(e -> {
-                    redisTemplate.opsForHash().delete("tb:device_fun:"+type+":"+e);
-                });
-
-                this.saveFunction(BeanUtil.toBean(tbFunctionVO, TbFunctionDTO.class));
-
-            }else {
-                Assert.isFalse(allDevices.stream().anyMatch(device -> {
-                    JSONObject deviceJson = JSONUtil.parseObj(device);
-                    return updateType.equals(deviceJson.getStr("type"));
-                }), "设备类型已存在");
-
-                this.saveFunction(BeanUtil.toBean(tbFunctionVO, TbFunctionDTO.class));
-            }
-            // 提交事务
-            redisTemplate.exec();
-        } catch (Exception e) {
-            // 回滚事务
-            redisTemplate.discard();
-            throw e;
-        }*/
     }
 
     private void saveFunction(TbFunctionEntity tbFunction) {
