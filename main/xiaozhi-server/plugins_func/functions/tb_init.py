@@ -13,14 +13,14 @@ userUrl = "api/auth/user"
 loginUrl = "api/auth/login"
 getCustomerDeviceInfos = "api/customer/{customer_id}/deviceInfos"
 
-
 def append_devices_to_prompt(conn):
-    device_id = conn.headers.get("device-id", "")
-    if device_id and conn.use_function_call_mode:
-        init_tb_token(device_id) #初始化token
-        tbuser = getTbUser(device_id)
+    device_id = conn.headers.get("device-id", "").replace(':', '-')
+    user_id = redisClient.get(f"device:{device_id}:user_id")
+    if user_id:
+        init_tb_token(user_id) #初始化token
+        tbuser = getTbUser(user_id)
         customer_id = tbuser["customerId"]["id"]
-        tb_device_list = getTbDevices(device_id,customer_id)
+        tb_device_list = getTbDevices(user_id,customer_id)
 
         prompt = "下面是我的设备，可以通过小智控制:"
         #if len(tb_device_list) == 0:
@@ -35,9 +35,9 @@ def append_devices_to_prompt(conn):
 
             # 序列化字典中的列表为 JSON 字符串
             control_device_dict_serialized = {k: json.dumps(v, ensure_ascii=False) for k, v in control_device_dict.items()}
-            redisClient.hmset(f"tb:{device_id}:control_device",control_device_dict_serialized)
+            redisClient.hmset(f"tb:user:{user_id}:control_device",control_device_dict_serialized)
         else:
-            redisClient.delete(f"tb:{device_id}:control_device")
+            redisClient.delete(f"tb:user:{user_id}:control_device")
 
         for tb_device in tb_device_list:
             prompt += tb_device["name"] + ","
@@ -70,10 +70,10 @@ def initialize_tb_handler(conn):
     return TB_CACHE
 
 #初始化tb系统token缓存
-def init_tb_token(device_id):
+def init_tb_token(user_id):
     tb_token = None
-    if device_id:
-        key_prefix = "tb:"+device_id
+    if user_id:
+        key_prefix = "tb:user:"+user_id
         tb_token = redisClient.get(key_prefix+":token")
         if not tb_token:
             invoking_api = {
@@ -92,8 +92,8 @@ def init_tb_token(device_id):
     return tb_token
 
 #获取tb用户
-def getTbUser(device_id):
-    key_prefix = "tb:"+device_id
+def getTbUser(user_id):
+    key_prefix = "tb:user:"+user_id
     invoking_api = {
         "url": f"{redisClient.get('tb:url')}/{userUrl}",
         "headers": {
@@ -104,8 +104,8 @@ def getTbUser(device_id):
     return json.loads(response.text)
 
 #获取tb设备
-def getTbDevices(device_id,customer_id,**kwargs):
-    key_prefix = "tb:"+device_id
+def getTbDevices(user_id,customer_id,**kwargs):
+    key_prefix = "tb:user:"+user_id
     url = f"{redisClient.get('tb:url')}/{getCustomerDeviceInfos}?active=true&page=0&pageSize=50"
     url = url.format(customer_id=customer_id)
     for key,value in kwargs.items():

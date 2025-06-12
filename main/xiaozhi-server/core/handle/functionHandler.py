@@ -80,7 +80,9 @@ class FunctionHandler:
 
 
         """tb系统需要初始化提示词"""
-        if self.function_registry.function_registry.get("tb_device"):
+        device_id = self.conn.headers.get("device-id", "")
+        tb_switch = redisClient.get(f"device:{device_id.replace(':', '-')}:tb_switch")
+        if tb_switch == "1":
             tb_device_list = tb_append_devices_to_prompt(self.conn)
             #添加tb系统函数-qiu
             if tb_device_list:
