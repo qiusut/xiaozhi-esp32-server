@@ -76,7 +76,7 @@ async def _get_device_status(conn):
     names = redisClient.hkeys("recipe:nameMap")
     device_id = conn.headers.get("device-id", "")
     user_id = redisClient.get(f"device:{device_id.replace(':', '-')}:user_id")
-    private_name  = redisClient.hkeys(f"recipe:{user_id}:nameMap")
+    private_name  = redisClient.hkeys(f"recipe:user:{user_id}:nameMap")
     for name in private_name:
         if name in names:
             names.append(pvt_recipe_pre_zh+name)
@@ -95,7 +95,7 @@ async def _make_device_property(conn, values=None,isChoice=False):
 
     device_id = conn.headers.get("device-id", "")
     user_id = redisClient.get(f"device:{device_id.replace(':', '-')}:user_id")
-    private_names  = redisClient.hkeys(f"recipe:{user_id}:nameMap")
+    private_names  = redisClient.hkeys(f"recipe:user:{user_id}:nameMap")
 
     if not any([names, private_names]):
         return "您不能制作任何菜品"
@@ -156,10 +156,10 @@ async def _make_device_property(conn, values=None,isChoice=False):
     elif len(matched_devices)==1:
         matched_recipe = matched_devices[0]
         if matched_recipe.startswith(pvt_recipe_pre):
-            info_str = redisClient.hget(f"recipe:{user_id}:nameMap",matched_recipe.replace(pvt_recipe_pre,""))
+            info_str = redisClient.hget(f"recipe:user:{user_id}:nameMap",matched_recipe.replace(pvt_recipe_pre,""))
         else:
             info_str = redisClient.hget("recipe:nameMap",matched_recipe)
-        info_dict =  json.loads(info_str)
+        info_dict = json.loads(info_str)
         if isinstance(info_dict, str):
             info_dict = json.loads(info_dict)
         send_message = json.dumps({"type": "recipe", "recipe": info_dict})

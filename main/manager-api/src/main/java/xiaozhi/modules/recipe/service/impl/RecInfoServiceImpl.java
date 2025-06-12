@@ -328,7 +328,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
             for (RecInfoVO item : recInfoVOS) {
                 if(item.getScope().equals(0)){
                     RecInfoServerVO recInfoVO = BeanUtil.copyProperties(item, RecInfoServerVO.class);
-                    jsonObject.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
+                    jsonObject.set(item.getName(), recInfoVO);
                 }else {
                     List<RecInfoVO> recInfoVOList = userMap.getOrDefault(item.getUserId(), new ArrayList<>());
                     recInfoVOList.add(item);
@@ -337,7 +337,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
             }
             if(!jsonObject.isEmpty()){
                 redisUtils.getRedisTemplate().delete(key_prefix + "nameMap");
-                redisUtils.getRedisTemplate().opsForHash().putAll(key_prefix + "nameMap", jsonObject);
+                redisUtils.rawHashPutAll(key_prefix + "nameMap", jsonObject);
             }
             if(!userMap.isEmpty()){
                 for (Map.Entry<Long, List<RecInfoVO>> entry : userMap.entrySet()) {
@@ -347,7 +347,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
                         jsonObject1.set(item.getName(), JSONUtil.toJsonStr(recInfoVO));
                     }
                     redisUtils.getRedisTemplate().delete(key_prefix + entry.getKey() + ":nameMap");
-                    redisUtils.getRedisTemplate().opsForHash().putAll(key_prefix + entry.getKey() + ":nameMap", jsonObject1);
+                    redisUtils.rawHashPutAll(key_prefix +"user:"+ entry.getKey() + ":nameMap", jsonObject1);
                 }
             }
         }
