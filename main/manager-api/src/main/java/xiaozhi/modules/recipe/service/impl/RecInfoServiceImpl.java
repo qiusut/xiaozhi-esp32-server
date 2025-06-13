@@ -353,15 +353,15 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         }
 
         List<AgentEntity> agentList = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class));
-        Map<String, AgentEntity> agentMap = new HashMap<>();
+        //Map<String, AgentEntity> agentMap = new HashMap<>();
         if(CollectionUtil.isNotEmpty(agentList)){
-            agentMap = agentList.stream().collect(Collectors.toMap(AgentEntity::getId, e->e));
+            //agentMap = agentList.stream().collect(Collectors.toMap(AgentEntity::getId, e->e));
 
             List<DeviceEntity> deviceEntityList = deviceDao.selectList(Wrappers.lambdaQuery(DeviceEntity.class));
             if (CollectionUtil.isNotEmpty(deviceEntityList)){
                 for (DeviceEntity e : deviceEntityList){
-                    redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":recipe_switch", agentMap.get(e.getAgentId()).getIsRecipe());
-                    redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":tb_switch", agentMap.get(e.getAgentId()).getIsTb());
+                    //redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":recipe_switch", agentMap.get(e.getAgentId()).getIsRecipe());
+                    //redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":tb_switch", agentMap.get(e.getAgentId()).getIsTb());
                     redisUtils.getRedisTemplate().opsForValue().set("device:"+e.getMacAddress().replace(":","-")+":user_id", e.getUserId());
                 }
             }
