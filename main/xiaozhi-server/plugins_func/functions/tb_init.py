@@ -82,24 +82,10 @@ def append_devices_to_prompt(function_handler):
 
                     # 遍历功能字典，注册功能
                     for tb_key,tb_value in func_dict.items():
-                        function_handler.conn.function_registry.register_tb_function(tb_key,tb_value)
+                        function_handler.function_registry.register_tb_function(tb_key,tb_value)
 
                 else:
                     redisClient.delete(f"tb:user:{user_id}:control_device")
-
-                for tb_device in tb_device_list:
-                    prompt += tb_device["name"] + ","
-                function_handler.conn.prompt += prompt
-                """
-                "," + tb_device["id"]["id"] + 
-                
-                prompt内容：'下面是我家智能设备，可以通过thingsboard控制
-                客厅,玩具灯,switch.cuco_cn_460494544_cp1_on_p_2_1
-                卧室,台灯,switch.iot_cn_831898993_socn1_on_p_2_1
-                '
-                """
-                # 更新提示词
-                function_handler.conn.dialogue.update_system_message(function_handler.conn.prompt)
 
     except Exception as e:
         logger.bind(tag=TAG).error(f"tb初始化组件失败: {e}")
