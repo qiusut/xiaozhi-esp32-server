@@ -121,6 +121,9 @@ public class AgentController {
             if(entity.getIsRecipe()==null){
                 entity.setIsRecipe(1);
             }
+            if(entity.getIsTb()==null){
+                entity.setIsTb(0);
+            }
         }
 
         // 设置用户ID和创建者信息
@@ -213,6 +216,10 @@ public class AgentController {
 
         if (dto.getIsRecipe() != null) {
             existingEntity.setIsRecipe(dto.getIsRecipe());
+        }
+
+        if (dto.getIsTb() != null) {
+            existingEntity.setIsTb(dto.getIsTb());
         }
 
         // 设置更新者信息

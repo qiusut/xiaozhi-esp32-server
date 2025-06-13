@@ -158,6 +158,7 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         AgentEntity agentEntity = agentDao.selectById(agentId);
         //菜谱
         redisUtils.set("device:"+macAddress.replace(":","-")+":recipe_switch", agentEntity.getIsRecipe());
+        redisUtils.set("device:"+macAddress.replace(":","-")+":tb_switch", agentEntity.getIsTb());
         return true;
     }
 

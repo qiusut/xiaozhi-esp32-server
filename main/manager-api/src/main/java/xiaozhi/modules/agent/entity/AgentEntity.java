@@ -70,6 +70,9 @@ public class AgentEntity {
     @Schema(description = "是否开启烹饪功能,0:否,1:是")
     private Integer isRecipe;
 
+    @Schema(description = "是否开启Tb功能,0:否,1:是")
+    private Integer isTb;
+
     @Schema(description = "排序")
     private Integer sort;
 
