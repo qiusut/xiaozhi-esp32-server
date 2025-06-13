@@ -46,11 +46,6 @@ class FunctionHandler:
         self.function_registry.register_function("get_time")
         self.function_registry.register_function("get_lunar")
 
-        device_id = self.conn.headers.get("device-id", "")
-        switch = redisClient.get(f"device:{device_id.replace(':', '-')}:recipe_switch")
-        if switch == "1":
-            self.function_registry.register_function("recipe_device")
-
     def register_config_functions(self):
         """注册配置中的函数,可以不同客户端使用不同的配置"""
         for func in self.config["Intent"][self.config["selected_module"]["Intent"]].get(
@@ -58,55 +53,11 @@ class FunctionHandler:
         ):
             self.function_registry.register_function(func)
 
+        """home assistant需要初始化提示词"""
+        append_devices_to_prompt(self.conn)
 
-        """tb系统需要初始化提示词"""
-        try:
-            device_id = self.conn.headers.get("device-id", "")
-            tb_switch = redisClient.get(f"device:{device_id.replace(':', '-')}:tb_switch")
-            if tb_switch == "1":
-                tb_device_list = tb_append_devices_to_prompt(self.conn)
-                #添加tb系统函数-qiu
-                if tb_device_list:
-
-                    all_devices = redisClient.lrange('tb:device', 0, -1)
-                    device_type_dict = {}
-                    # 遍历每个元素，解析 JSON 并构建结果字典
-                    for item in all_devices:
-                        try:
-                            # 将 JSON 字符串反序列化为 Python 字典
-                            data = json.loads(item)
-                            # 检查字典中是否包含所需的键
-                            if 'type' in data and 'funs' in data:
-                                # 使用 'type' 作为键，'funs' 作为值
-                                device_type_dict[data['type']] = data['funs']
-                        except json.JSONDecodeError:
-                            print(f"无法解析 JSON: {item}")
-
-                    # 初始化功能字典
-                    func_dict = {}
-                    tb_names = {e["name"] for e in tb_device_list}
-                    tb_name_fun = {
-                        "type": "list",
-                        "description": redisClient.get('tb:name_desc').format(names=tb_names)
-                    }
-                    # 遍历设备列表，直接构造功能字典
-                    for device in tb_device_list:
-                        device_type = device.get("type")
-                        tb_names.add(device["name"])
-                        if device_type and device_type in device_type_dict:
-                            tb_funs = device_type_dict[device_type]
-                            for fun_name in tb_funs:
-                                function_call = json.loads(redisClient.hget(f"tb:device_fun:{device_type}:{fun_name}", "function_call"))
-                                properties = function_call["function"]["parameters"]["properties"]
-                                properties["tb_name"] = tb_name_fun
-                                func_dict[device_type+"_"+fun_name] = function_call
-
-
-                    # 遍历功能字典，注册功能
-                    for tb_key,tb_value in func_dict.items():
-                        self.function_registry.register_tb_function(tb_key,tb_value)
-        except Exception as e:
-            self.conn.bind(tag=TAG).error(f"tb实例化组件失败: {e}")
+        """tb系统初始化-qiu"""
+        tb_append_devices_to_prompt(self)
 
 
     def get_function(self, name):
