@@ -45,7 +45,7 @@ async def handle_tb_device(conn,function_name,param_dict):
     device_id = conn.headers.get("device-id", "").replace(':', '-')
     user_id = redisClient.get(f"device:{device_id}:user_id")
     tb_url = redisClient.get('tb:url')
-    tb_token = init_tb_token(user_id)
+    tb_token = init_tb_token(user_id,conn.config["plugins"]["tb_device"])
     control_device_dict = redisClient.hgetall(f"tb:user:{user_id}:control_device")
     action_response = ActionResponse(action=Action.REQLLM, result="执行成功", response=None)
     if function_name == tb_fun:
