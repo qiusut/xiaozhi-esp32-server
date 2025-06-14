@@ -167,19 +167,6 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
         redisUtils.setRawString("tb:url", sysParamsService.getValue("tb.url", true));
         redisUtils.setRawString("tb:name_desc", sysParamsService.getValue("tb.name_desc", true));
 
-        /*List<SysUserEntity> sysUserList = sysUserDao.selectList(
-                Wrappers.<SysUserEntity>lambdaQuery()
-                        .isNotNull(SysUserEntity::getTbUsername)
-                        .ne(SysUserEntity::getTbUsername, "")
-                        .isNotNull(SysUserEntity::getTbPassword)
-                        .ne(SysUserEntity::getTbPassword, "")
-        );
-
-        sysUserList.stream().forEach(sysUser -> {
-            redisUtils.setRawString("tb:user:"+sysUser.getId()+":username",sysUser.getTbUsername());
-            redisUtils.setRawString("tb:user:"+sysUser.getId()+":password",sysUser.getTbPassword());
-        });*/
-
         List<TbFunctionEntity> list =this.list(Wrappers.lambdaQuery(TbFunctionEntity.class).eq(TbFunctionEntity::getStatus, 1));
         if(CollectionUtil.isNotEmpty(list)) {
             for(TbFunctionEntity item : list){

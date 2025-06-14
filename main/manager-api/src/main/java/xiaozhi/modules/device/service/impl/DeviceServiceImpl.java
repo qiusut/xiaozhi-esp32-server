@@ -61,7 +61,6 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
     private final SysParamsService sysParamsService;
     private final RedisUtils redisUtils;
     private final OtaService otaService;
-    private final AgentDao agentDao;
 
     @Async
     public void updateDeviceConnectionInfo(String agentId, String deviceId, String appVersion) {
@@ -154,11 +153,6 @@ public class DeviceServiceImpl extends BaseServiceImpl<DeviceDao, DeviceEntity> 
         // 清理redis缓存
         redisUtils.delete(cacheDeviceKey);
         redisUtils.delete(deviceKey);
-
-        AgentEntity agentEntity = agentDao.selectById(agentId);
-        //菜谱
-        redisUtils.set("device:"+macAddress.replace(":","-")+":recipe_switch", agentEntity.getIsRecipe());
-        redisUtils.set("device:"+macAddress.replace(":","-")+":tb_switch", agentEntity.getIsTb());
         return true;
     }
 

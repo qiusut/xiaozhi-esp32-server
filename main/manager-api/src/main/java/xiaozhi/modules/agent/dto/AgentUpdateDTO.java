@@ -69,12 +69,6 @@ public class AgentUpdateDTO implements Serializable {
     @Schema(description = "排序", example = "1", nullable = true)
     private Integer sort;
 
-    @Schema(description = "是否开启烹饪功能,0:否,1:是", required = false)
-    private Integer isRecipe;
-
-    @Schema(description = "是否开启TB功能,0:否,1:是", required = false)
-    private Integer isTb;
-
 
     @Data
     @Schema(description = "插件函数信息")
