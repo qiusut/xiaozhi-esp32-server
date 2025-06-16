@@ -1,12 +1,14 @@
 package xiaozhi.modules.agent.entity;
 
 import java.io.Serializable;
+import java.util.Map;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -42,7 +44,8 @@ public class AgentPluginMapping implements Serializable {
      * 插件参数(Json)格式
      */
     @Schema(description = "插件参数(Json)格式")
-    private String paramInfo;
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private Map<String, Object> paramInfo;
 
     // 冗余字段，用于方便在根据id查询插件时，对照查出插件的Provider_code,详见dao层xml文件
     @TableField(exist = false)

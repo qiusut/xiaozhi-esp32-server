@@ -475,7 +475,7 @@ class ConnectionHandler:
             if model_intent != "Intent_nointent":
                 plugin_from_server = private_config.get("plugins", {})
                 for plugin, config_str in plugin_from_server.items():
-                    plugin_from_server[plugin] = json.loads(config_str)
+                    plugin_from_server[plugin] = config_str
                 self.config["plugins"] = plugin_from_server
                 self.config["Intent"][self.config["selected_module"]["Intent"]][
                     "functions"

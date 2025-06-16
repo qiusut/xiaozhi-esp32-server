@@ -6,7 +6,7 @@
         SELECT COUNT(*) FROM ai_device WHERE agent_id = #{agentId}
     </select>
 
-    <resultMap id="AgentInfoMap" type="xiaozhi.modules.agent.vo.AgentInfoVO">
+    <resultMap id="AgentInfoMap" type="xiaozhi.modules.agent.vo.AgentInfoVO" extends="BaseResultMap">
         <id column="id"           property="id"/>
         <result column="userId"    property="userId"/>
         <result column="agentCode" property="agentCode"/>
@@ -33,6 +33,18 @@
         <result column="updater" property="updater"/>
         <result column="updatedAt" property="updatedAt"/>
     </resultMap>
+
+    <resultMap id="BaseResultMap" type="xiaozhi.modules.agent.entity.AgentPluginMapping">
+        <id column="id" property="id" jdbcType="BIGINT"/>
+        <result column="agent_id" property="agentId" jdbcType="VARCHAR"/>
+        <result column="plugin_id" property="pluginId" jdbcType="VARCHAR"/>
+
+        <!-- 关键修复：显式指定 JacksonTypeHandler -->
+        <result column="paramInfo" property="paramInfo"
+                typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"
+                javaType="java.util.Map"/>
+    </resultMap>
+
 
     <select id="selectAgentInfoById" resultMap="AgentInfoMap">
         SELECT a.id,

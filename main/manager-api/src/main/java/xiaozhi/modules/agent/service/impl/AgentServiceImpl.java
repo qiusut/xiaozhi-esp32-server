@@ -276,7 +276,7 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
                 AgentPluginMapping m = new AgentPluginMapping();
                 m.setAgentId(agentId);
                 m.setPluginId(info.getPluginId());
-                m.setParamInfo(JsonUtils.toJsonString(info.getParamInfo()));
+                m.setParamInfo(info.getParamInfo());
                 AgentPluginMapping old = existMap.get(info.getPluginId());
                 if (old != null) {
                     // 已存在，设置id表示更新
@@ -381,7 +381,7 @@ public class AgentServiceImpl extends BaseServiceImpl<AgentDao, AgentEntity> imp
                     paramInfo.put((String) field.get("key"), field.get("default"));
                 }
             }
-            mapping.setParamInfo(JsonUtils.toJsonString(paramInfo));
+            mapping.setParamInfo(paramInfo);
             mapping.setAgentId(entity.getId());
             toInsert.add(mapping);
         }
