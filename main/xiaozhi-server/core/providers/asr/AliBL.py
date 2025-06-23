@@ -39,12 +39,12 @@ class ASRProvider(ASRProviderBase):
             # 直接使用父类的处理逻辑
             return await super().open_audio_channels(conn)
 
-    async def receive_audio(self, audio, audio_have_voice):
+    async def receive_audio(self,conn, audio, audio_have_voice):
         if self.interface_type == InterfaceType.STREAM:
             pass
         else:
             # 直接使用父类的处理逻辑
-            return await super().receive_audio(audio,audio_have_voice)
+            return await super().receive_audio(conn,audio,audio_have_voice)
 
     async def _send_request_gummy(self, audio_data, segment_size: int) -> Optional[str]:
         """Send request to Aliyun ASR service."""
