@@ -225,6 +225,15 @@ public class RedisUtils {
             return null;
         });
     }
+    public String rawHashGet(String key, String field) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes();
+            byte[] fieldBytes = field.getBytes();
+            byte[] valueBytes = connection.hashCommands().hGet(keyBytes, fieldBytes);
+            return valueBytes == null ? null : new String(valueBytes);
+        });
+    }
+
     //qiu-end
 
 

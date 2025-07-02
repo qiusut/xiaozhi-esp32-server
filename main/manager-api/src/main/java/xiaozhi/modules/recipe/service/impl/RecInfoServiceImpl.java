@@ -278,8 +278,10 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         }
         RecInfoEntity dto = this.getById(id);
         Assert.notNull(dto,"菜谱不存在");
-        Object info = redisUtils.getRedisTemplate().opsForHash().get("recipe:nameMap",dto.getName());
-        Assert.notNull(info,"菜谱不存在");
+        //Object info = redisUtils.getRedisTemplate().opsForHash().get("recipe:nameMap",dto.getName());
+        String recipeJson = redisUtils.rawHashGet("recipe:nameMap", dto.getName());
+        Assert.isTrue(StrUtil.isNotBlank(recipeJson),"菜谱不存在");
+        Assert.notNull(recipeJson,"菜谱不存在");
         Map<String, String> headers = new HashMap<>();
         if(StrUtil.isNotBlank(device_mac)){
             headers.put("device_mac", device_mac);
@@ -289,7 +291,7 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         return HttpUtil.createRequest(Method.POST, http_url + http_url_ws)
                 .addHeaders(headers)
                 .body("""
-                        {"type": "recipe","recipe": ${recipe}}""".replace("${recipe}",info.toString()))
+                        {"type": "recipe","recipe": ${recipe}}""".replace("${recipe}",recipeJson))
                 .execute().body();
     }
 
