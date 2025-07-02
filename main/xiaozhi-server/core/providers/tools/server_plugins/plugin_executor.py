@@ -32,6 +32,9 @@ class ServerPluginExecutor(ToolExecutor):
                     result = func_item.func(**arguments)
                 elif func_type.code == 3:  # CHANGE_SYS_PROMPT
                     result = func_item.func(conn, **arguments)
+                elif func_type.code == 9:  #ToolType.TB_CTL:
+                    #增加执行方法处理-qiu
+                    result = func_item.func(conn,tool_name, arguments)
                 else:
                     result = func_item.func(**arguments)
             else:

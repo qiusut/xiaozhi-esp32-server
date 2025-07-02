@@ -44,3 +44,11 @@ class IotDescriptor:
                             "type": v["type"],
                         }
                 self.methods.append(method)
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "description": self.description,
+            "properties": self.properties,
+            "methods": self.methods,
+        }

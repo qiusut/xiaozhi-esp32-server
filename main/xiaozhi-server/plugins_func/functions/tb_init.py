@@ -18,15 +18,15 @@ loginUrl = "api/auth/login"
 getCustomerDeviceInfos = "api/customer/{customer_id}/deviceInfos"
 getTenantDeviceInfos = "api/tenant/deviceInfos"
 
-def append_devices_to_prompt(function_handler):
+def append_devices_to_prompt(conn):
     try:
-        if "tb_device" in function_handler.config["Intent"][function_handler.config["selected_module"]["Intent"]].get(
+        if "tb_device" in conn.config["Intent"][conn.config["selected_module"]["Intent"]].get(
                 "functions", []
         ):
-            device_id = function_handler.conn.headers.get("device-id", "").replace(':', '-')
+            device_id = conn.headers.get("device-id", "").replace(':', '-')
             user_id = redisClient.get(f"device:{device_id}:user_id")
             if user_id:
-                plugin_config = function_handler.conn.config["plugins"]["tb_device"]
+                plugin_config = conn.config["plugins"]["tb_device"]
                 init_tb_token(user_id,plugin_config) #初始化token
                 tbuser = getTbUser(user_id)
 
@@ -82,7 +82,7 @@ def append_devices_to_prompt(function_handler):
 
                     # 遍历功能字典，注册功能
                     for tb_key,tb_value in func_dict.items():
-                        function_handler.function_registry.register_tb_function(tb_key,tb_value)
+                        conn.func_handler.function_registry.register_tb_function(tb_key,tb_value)
 
                 else:
                     redisClient.delete(f"tb:user:{user_id}:control_device")

@@ -9,6 +9,8 @@ from core.providers.tools.device_iot import handleIotDescriptors, handleIotStatu
 from core.handle.reportHandle import enqueue_asr_report
 import asyncio
 
+from core.providers.tts.dto.dto import ContentType
+
 TAG = __name__
 
 
@@ -166,10 +168,11 @@ async def handleTextMessage(conn, message):
                 if "text" in msg_json:
                     try:
                         await send_stt_message(conn, msg_json["text"])
-                        future0 = conn.executor.submit(conn.speak_and_play, "en", 0)
-                        conn.tts_queue.put((future0, 0))
-                        future = conn.executor.submit(conn.speak_and_play, msg_json["text"], 1)
-                        conn.tts_queue.put((future, 1))
+                        conn.tts.tts_one_sentence(conn, ContentType.TEXT, content_detail=msg_json["text"])
+                        #future0 = conn.executor.submit(conn.speak_and_play, "en", 0)
+                        #conn.tts_queue.put((future0, 0))
+                        #future = conn.executor.submit(conn.speak_and_play, msg_json["text"], 1)
+                        #conn.tts_queue.put((future, 1))
                     finally:
                         await send_tts_message(conn, "stop", None)
             #qiu-end

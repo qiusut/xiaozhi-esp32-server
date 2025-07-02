@@ -109,8 +109,12 @@ class UnifiedToolHandler:
         """初始化Home Assistant提示词"""
         try:
             from plugins_func.functions.hass_init import append_devices_to_prompt
+            from plugins_func.functions.tb_init import append_devices_to_prompt as tb_append_devices_to_prompt
 
             append_devices_to_prompt(self.conn)
+
+            """tb系统初始化-qiu"""
+            tb_append_devices_to_prompt(self.conn)
         except ImportError:
             pass  # 忽略导入错误
         except Exception as e:

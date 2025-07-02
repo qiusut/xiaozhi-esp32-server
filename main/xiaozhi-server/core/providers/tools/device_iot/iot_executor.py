@@ -108,6 +108,24 @@ class DeviceIoTExecutor(ToolExecutor):
                         return property_item["value"]
         return None
 
+    async def set_iot_status(self, name, property_name, value):
+        """设置物联网状态"""
+        for key, iot_descriptor in self.conn.iot_descriptors.items():
+            if key.lower() == name.lower():
+                for property_item in iot_descriptor.properties:
+                    if property_item["name"].lower() == property_name.lower():
+                        if type(value) != type(property_item["value"]):
+                            self.conn.logger.bind(tag= __name__).error(
+                                f"属性{property_item['name']}的值类型不匹配"
+                            )
+                            return
+                        property_item["value"] = value
+                        self.conn.logger.bind(tag= __name__).info(
+                            f"物联网状态更新: {name} , {property_name} = {value}"
+                        )
+                        return
+        self.conn.logger.bind(tag= __name__).warning(f"未找到设备 {name} 的属性 {property_name}")
+
     async def _send_iot_command(
         self, device_name: str, method_name: str, parameters: Dict[str, Any]
     ):
@@ -128,6 +146,12 @@ class DeviceIoTExecutor(ToolExecutor):
                             {"type": "iot", "commands": [command]}
                         )
                         await self.conn.websocket.send(send_message)
+
+                        # 自己加了，解决bug-qiu
+                        if parameters:
+                            for p_key, p_value in parameters.items():
+                                await self.set_iot_status(device_name, p_key, p_value)
+
                         return
 
         raise Exception(f"未找到设备{device_name}的方法{method_name}")

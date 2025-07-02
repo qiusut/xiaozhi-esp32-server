@@ -8,9 +8,10 @@ from core.utils.util import check_vad_update, check_asr_update
 
 import json
 from aiohttp import web
-from core.handle.iotHandle import set_iot_status
+from core.providers.tools.device_iot import DeviceIoTExecutor
 from core.handle.sendAudioHandle import send_stt_message, send_tts_message
 
+from core.providers.tts.dto.dto import ContentType
 
 TAG = __name__
 
@@ -178,22 +179,26 @@ class WebSocketServer:
                             if body_dict["type"] not in ("recipe",):
                                 try:
                                     await send_stt_message(handler, "收到,指令发送成功")
-                                    future = handler.executor.submit(handler.speak_and_play, "收到", 0)
-                                    handler.tts_queue.put((future, 0))
+                                    handler.tts.tts_one_sentence(handler, ContentType.TEXT, content_detail="收到")
+                                    #future = handler.executor.submit(handler.speak_and_play, "收到", 0)
+                                    #handler.tts_queue.put((future, 0))
+
                                     await handler.websocket.send(body)
-                                    future1 = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
-                                    handler.tts_queue.put((future1, 1))
+                                    handler.tts.tts_one_sentence(handler, ContentType.TEXT, content_detail="指令发送成功")
+                                    #future1 = handler.executor.submit(handler.speak_and_play, "指令发送成功", 1)
+                                    #handler.tts_queue.put((future1, 1))
                                 finally:
                                     await send_tts_message(handler, "stop", None)
                             else:
                                 await handler.websocket.send(body)
 
+                            device_iot_executor = DeviceIoTExecutor(handler)
                             for item in body_dict.get("commands", []):
                                 name = item["name"]
                                 parameters = item["parameters"]
                                 if name and isinstance(parameters, dict) and parameters:
                                     for p_key, p_value in parameters.items():
-                                        await set_iot_status(handler, name, p_key, p_value)
+                                        await device_iot_executor.set_iot_status(name, p_key, p_value)
 
                             self.logger.bind(tag=TAG).info(f"{device_mac}-http推送websocket消息: {body}")
                             message = "发送成功"

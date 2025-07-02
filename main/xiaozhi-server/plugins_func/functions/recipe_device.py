@@ -1,5 +1,6 @@
 import asyncio
 import json
+import threading
 
 from config.logger import setup_logging
 from config.settings import redisClient
@@ -183,19 +184,34 @@ async def _make_device_property(conn, values=None,isChoice=False):
 
 
 def _recipe_device_action(conn, func, *args, **kwargs):
+
+    # 创建新的事件循环
+    new_loop = asyncio.new_event_loop()
+    # 在新线程中运行事件循环（仅运行一次）
+    def run_loop():
+        new_loop.run_forever()
+    loop_thread = threading.Thread(target=run_loop, daemon=True)
+    loop_thread.start()
+
+    action=Action.REQLLM
+    result=None
+    response=None
     """处理设备操作的通用函数"""
-    future = asyncio.run_coroutine_threadsafe(
-        func(conn, *args, **kwargs), conn.loop)
+    future = asyncio.run_coroutine_threadsafe(func(conn, *args, **kwargs), new_loop)
+
     try:
         result = future.result()
-        action = Action.REQLLM
         if result:
             logger.bind(tag=TAG).info(f"{result}")
-
-        return ActionResponse(action=action, result=result, response=None)
     except Exception as e:
         logger.bind(tag=TAG).error(f"{e}")
-        return ActionResponse(action=Action.RESPONSE, result=None, response=f"{e}")
+        action = Action.RESPONSE
+        response = f"{e}"
+    finally:
+        new_loop.call_soon_threadsafe(new_loop.stop)  # 停止事件循环
+        loop_thread.join()  # 等待线程结束
+        new_loop.close()
+    return ActionResponse(action=action, result=result, response=response)
 
 @register_function('recipe_device', recipe_device_function_desc, ToolType.IOT_CTL)
 def recipe_device(conn, action: str, values: str = None, isChoice: bool = False):
