@@ -188,9 +188,7 @@ def _recipe_device_action(conn, func, *args, **kwargs):
     # 创建新的事件循环
     new_loop = asyncio.new_event_loop()
     # 在新线程中运行事件循环（仅运行一次）
-    def run_loop():
-        new_loop.run_forever()
-    loop_thread = threading.Thread(target=run_loop, daemon=True)
+    loop_thread = threading.Thread(target=new_loop.run_forever, daemon=True)
     loop_thread.start()
 
     action=Action.REQLLM

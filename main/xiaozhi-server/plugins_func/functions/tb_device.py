@@ -1,5 +1,6 @@
 import asyncio
 import json
+import threading
 
 from config.logger import setup_logging
 from config.settings import redisClient
@@ -31,15 +32,28 @@ tb_device_function_desc = {
 
 @register_function(tb_fun, tb_device_function_desc, ToolType.TB_CTL)
 def tb_device(conn,function_name: str,param_dict: dict):
+
+    # 创建新的事件循环
+    result = None
+    new_loop = asyncio.new_event_loop()
+    # 在新线程中运行事件循环（仅运行一次）
+    loop_thread = threading.Thread(target=new_loop.run_forever, daemon=True)
+    loop_thread.start()
     try:
         future = asyncio.run_coroutine_threadsafe(
             handle_tb_device(conn,function_name,param_dict),
-            conn.loop
+            new_loop
         )
-        return future.result()
+        result = future.result()
     except Exception as e:
         logger.bind(tag=TAG).error(f"处理设置属性意图错误: {e}")
 
+    finally:
+        new_loop.call_soon_threadsafe(new_loop.stop)  # 停止事件循环
+        loop_thread.join()  # 等待线程结束
+        new_loop.close()
+
+    return result
 
 async def handle_tb_device(conn,function_name,param_dict):
     device_id = conn.headers.get("device-id", "").replace(':', '-')
