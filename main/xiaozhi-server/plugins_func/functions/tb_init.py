@@ -1,8 +1,11 @@
+import copy
 import json
 from config.logger import setup_logging
 from config.settings import redisClient
+from core.providers.tools.base import ToolDefinition, ToolType
 from core.utils.util import check_model_key
 from core.utils.util import invoking_http_api
+from plugins_func.register import all_function_registry
 
 TAG = __name__
 logger = setup_logging()
@@ -78,12 +81,25 @@ def append_devices_to_prompt(conn):
                                 function_call = json.loads(redisClient.hget(f"tb:device_fun:{device_type}:{fun_name}", "function_call"))
                                 properties = function_call["function"]["parameters"]["properties"]
                                 properties["tb_name"] = tb_name_fun
-                                func_dict[device_type+"_"+fun_name] = function_call
+                                func_dict["tb_"+device_type+"_"+fun_name] = function_call
 
                     # 遍历功能字典，注册功能
-                    for tb_key,tb_value in func_dict.items():
-                        conn.func_handler.function_registry.register_tb_function(tb_key,tb_value)
-
+                    func = all_function_registry.get("tb_device")
+                    if func:
+                        #all_tools = conn.func_handler.get_all_tools()()
+                        #print(type(all_tools))
+                        for tb_key,tb_value in func_dict.items():
+                            func_copy = copy.copy(func)
+                            func_copy.name = tb_key
+                            func_copy.description = tb_value
+                            all_function_registry[tb_key] = func_copy
+                            """
+                            all_tools[tb_key] = ToolDefinition(
+                                name=tb_key,
+                                description=tb_value,
+                                tool_type=ToolType.SERVER_PLUGIN,
+                            )
+                            """
                 else:
                     redisClient.delete(f"tb:user:{user_id}:control_device")
 

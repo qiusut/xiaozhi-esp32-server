@@ -80,7 +80,7 @@ async def handle_tb_device(conn,function_name,param_dict):
 
     else:
         sre_parse = function_name.split("_")
-        device_views = json.loads(control_device_dict.get(sre_parse[0]))
+        device_views = json.loads(control_device_dict.get(sre_parse[1]))
         tb_names = param_dict.get("tb_name", None)
         if tb_names and len(device_views)>1:
             #device_views = [e for e in device_views if e["name"] in tb_name]

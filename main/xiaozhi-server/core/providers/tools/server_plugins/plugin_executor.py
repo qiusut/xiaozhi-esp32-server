@@ -80,6 +80,14 @@ class ServerPluginExecutor(ToolExecutor):
                     tool_type=ToolType.SERVER_PLUGIN,
                 )
 
+        for func_name,func_item in all_function_registry.items():
+            if func_item.type.code == 9 and func_name not in tools:
+                tools[func_name] = ToolDefinition(
+                    name=func_name,
+                    description=func_item.description,
+                    tool_type=ToolType.SERVER_PLUGIN,
+                )
+
         return tools
 
     def has_tool(self, tool_name: str) -> bool:

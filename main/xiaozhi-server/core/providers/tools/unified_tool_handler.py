@@ -59,14 +59,14 @@ class UnifiedToolHandler:
             # 自动导入插件模块
             auto_import_modules("plugins_func.functions")
 
+            # 初始化Home Assistant（如果需要）
+            self._initialize_home_assistant()
+
             # 初始化服务端MCP
             await self.server_mcp_executor.initialize()
 
             # 初始化MCP接入点
             await self._initialize_mcp_endpoint()
-
-            # 初始化Home Assistant（如果需要）
-            self._initialize_home_assistant()
 
             self.finish_init = True
             self.logger.info("统一工具处理器初始化完成")
@@ -123,6 +123,11 @@ class UnifiedToolHandler:
     def get_functions(self) -> List[Dict[str, Any]]:
         """获取所有工具的函数描述"""
         return self.tool_manager.get_function_descriptions()
+
+    #QIU- 获取所有工具
+    def get_all_tools(self) :
+        """获取所有工具的函数描述"""
+        return self.tool_manager.get_all_tools
 
     def current_support_functions(self) -> List[str]:
         """获取当前支持的函数名称列表"""

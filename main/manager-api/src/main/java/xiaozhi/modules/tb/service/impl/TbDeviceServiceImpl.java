@@ -123,7 +123,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbFunctionDao, TbFunctionEn
 
             Map<String, Object> jsonObject_fun = new HashMap<>();
             jsonObject_fun.put("method", function_call.getMethodName());
-            String function_call_tmp = this.function_call.replace("{name}", type+"_"+random)
+            String function_call_tmp = this.function_call.replace("{name}", "tb_"+type+"_"+random)
                     .replace("{description}", function_call.getDescription());
             JSONObject function_call_json = JSONUtil.parseObj(function_call_tmp);
             JSONObject parameters_tb_args_json = function_call_json.getJSONObject("function").getJSONObject("parameters").getJSONObject("properties").getJSONObject("tb_args");
