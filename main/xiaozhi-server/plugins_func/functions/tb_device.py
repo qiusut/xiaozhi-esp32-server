@@ -56,12 +56,20 @@ def tb_device(conn,function_name: str,param_dict: dict):
     return result
 
 async def handle_tb_device(conn,function_name,param_dict):
+    logger.bind(tag=TAG).error(f"成功进入了handle_tb_device方法: {function_name}")
     device_id = conn.headers.get("device-id", "").replace(':', '-')
     user_id = redisClient.get(f"device:{device_id}:user_id")
     tb_url = redisClient.get('tb:url')
+
+    action_response = ActionResponse(action=Action.REQLLM, result="执行成功", response=None)
+
+    if "tb_device" not in conn.config["plugins"]:
+        action_response.action = Action.RESPONSE
+        action_response.response = "未绑定tb账号，无法使用该功能"
+        return action_response
     tb_token = init_tb_token(user_id,conn.config["plugins"]["tb_device"])
     control_device_dict = redisClient.hgetall(f"tb:user:{user_id}:control_device")
-    action_response = ActionResponse(action=Action.REQLLM, result="执行成功", response=None)
+
     if function_name == tb_fun:
         description = "小智能为您控制的tb智能设备为："
         if control_device_dict:
@@ -134,6 +142,5 @@ async def handle_tb_device(conn,function_name,param_dict):
             action_response.action = Action.RESPONSE
 
     action_response.response = description
-    #action_response.result = description
 
     return action_response
