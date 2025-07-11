@@ -34,5 +34,6 @@ mcp-proxy==0.8.0
 PyJWT==2.8.0
 psutil==7.0.0
 portalocker==2.10.1
+Jinja2==3.1.6
 redis==5.2.1
 pyaudio==0.2.14
