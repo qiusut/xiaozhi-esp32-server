@@ -52,4 +52,4 @@ spring:
 
 logging:
   level:
-    com.baomidou.mybatisplus: debug
+    com.baomidou.mybatisplus: info
