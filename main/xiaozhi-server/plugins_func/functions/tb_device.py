@@ -18,7 +18,7 @@ tb_device_function_desc = {
     "type": "function",
     "function": {
         "name": tb_fun,
-        "description": "用于查询当前用户可远程控制的设备列表，不涉及设备操作,只用于当用户要明确查询能够远程控制哪些设备时才触发。",
+        "description": "获取可远程控制的设备列表，不涉及设备操作,只用于当用户要明确查询能够远程控制哪些设备时才触发。",
         "parameters": {
             "type": "object",
             "properties": {
