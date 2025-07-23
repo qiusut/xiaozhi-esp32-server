@@ -27,13 +27,16 @@ def append_devices_to_prompt(conn):
                 "functions", []
         ):
             device_id = conn.headers.get("device-id", "").replace(':', '-')
-            user_id = redisClient.get(f"device:{device_id}:user_id")
-            if user_id:
-                plugin_config = conn.config["plugins"]["tb_device"]
-                init_tb_token(user_id,plugin_config) #初始化token
-                tbuser = getTbUser(user_id)
+            #user_id = redisClient.get(f"device:{device_id}:user_id")
+            plugin_config = conn.config["plugins"]["tb_device"]
+            tb_username = plugin_config.get("tb_username")
+            tb_password = plugin_config.get("tb_password")
+            if tb_username:
 
-                tb_device_list = getTbDevices(user_id,tbuser)
+                init_tb_token(tb_username,tb_password) #初始化token
+                tbuser = getTbUser(tb_username)
+
+                tb_device_list = getTbDevices(tb_username,tbuser)
 
                 prompt = "下面是我的设备，可以通过小智控制:"
                 #if len(tb_device_list) == 0:
@@ -50,7 +53,7 @@ def append_devices_to_prompt(conn):
 
                     # 序列化字典中的列表为 JSON 字符串
                     control_device_dict_serialized = {k: json.dumps(v, ensure_ascii=False) for k, v in control_device_dict.items()}
-                    redisClient.hmset(f"tb:user:{user_id}:control_device",control_device_dict_serialized)
+                    redisClient.hmset(f"tb:account:{tb_username}:control_device",control_device_dict_serialized)
 
                     all_devices = redisClient.lrange('tb:device', 0, -1)
                     device_type_dict = {}
@@ -101,7 +104,7 @@ def append_devices_to_prompt(conn):
                             )
                             """
                 else:
-                    redisClient.delete(f"tb:user:{user_id}:control_device")
+                    redisClient.delete(f"tb:account:{tb_username}:control_device")
 
     except Exception as e:
         logger.bind(tag=TAG).error(f"tb初始化组件失败: {e}")
@@ -120,18 +123,18 @@ def initialize_tb_handler(conn):
     return TB_CACHE
 
 #初始化tb系统token缓存
-def init_tb_token(user_id,plugin_config):
+def init_tb_token(tb_username,tb_password):
     tb_token = None
-    if user_id:
-        key_prefix = "tb:user:"+user_id
+    if tb_username:
+        key_prefix = f"tb:account:{tb_username}"
         tb_token = redisClient.get(key_prefix+":token")
         if not tb_token:
             invoking_api = {
                 "url": f"{redisClient.get('tb:url')}/{loginUrl}",
                 "method": "POST",
                 "body": {
-                    "username": plugin_config.get("tb_username"),
-                    "password": plugin_config.get("tb_password")
+                    "username": tb_username,
+                    "password": tb_password
                 }
             }
             response = invoking_http_api(invoking_api)
@@ -142,8 +145,8 @@ def init_tb_token(user_id,plugin_config):
     return tb_token
 
 #获取tb用户
-def getTbUser(user_id):
-    key_prefix = "tb:user:"+user_id
+def getTbUser(tb_username):
+    key_prefix = f"tb:account:{tb_username}"
     invoking_api = {
         "url": f"{redisClient.get('tb:url')}/{userUrl}",
         "headers": {
@@ -154,8 +157,8 @@ def getTbUser(user_id):
     return json.loads(response.text)
 
 #获取tb设备
-def getTbDevices(user_id,tbuser:dict,**kwargs):
-    key_prefix = "tb:user:"+user_id
+def getTbDevices(tb_username,tbuser:dict,**kwargs):
+    key_prefix = f"tb:account:{tb_username}"
     if tbuser["authority"] == CUSTOMER_USER:
         customer_id = tbuser["customerId"]["id"]
         url = f"{redisClient.get('tb:url')}/{getCustomerDeviceInfos}?active=true&page=0&pageSize=50"

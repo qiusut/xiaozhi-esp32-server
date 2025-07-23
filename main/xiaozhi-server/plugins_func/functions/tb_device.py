@@ -56,30 +56,28 @@ def tb_device(conn,function_name: str,param_dict: dict):
     return result
 
 async def handle_tb_device(conn,function_name,param_dict):
-    logger.bind(tag=TAG).error(f"成功进入了handle_tb_device方法: {function_name}")
-    device_id = conn.headers.get("device-id", "").replace(':', '-')
-    user_id = redisClient.get(f"device:{device_id}:user_id")
+    logger.bind(tag=TAG).info(f"成功进入了handle_tb_device方法: {function_name}")
     tb_url = redisClient.get('tb:url')
 
     action_response = ActionResponse(action=Action.REQLLM, result="执行成功", response=None)
+    plugin_config = conn.config["plugins"]["tb_device"]
 
-    if "tb_device" not in conn.config["plugins"]:
+    if not plugin_config:
         action_response.action = Action.RESPONSE
         action_response.response = "未绑定tb账号，无法使用该功能"
         return action_response
-    tb_token = init_tb_token(user_id,conn.config["plugins"]["tb_device"])
-    control_device_dict = redisClient.hgetall(f"tb:user:{user_id}:control_device")
+
+    tb_username = plugin_config.get("tb_username")
+    tb_password = plugin_config.get("tb_password")
+
+    tb_token = init_tb_token(tb_username,tb_password)
+    control_device_dict = redisClient.hgetall(f"tb:account:{tb_username}:control_device")
 
     if function_name == tb_fun:
         description = "小智能为您控制的tb智能设备为："
         if control_device_dict:
-            #device_set = set()
-            #for tb_key,tb_value in control_device_dict.items():
-                #for tb_view in json.loads(tb_value):
-                    #device_set.add(tb_view["name"])
 
             device_set = {tb_view["name"] for tb_value in control_device_dict.values() for tb_view in json.loads(tb_value)}
-            #for tb_name in device_set:
             description += ", ".join(device_set) + "。"
         else:
             description = "您的账号下没有能控制的智能设备。"
@@ -91,7 +89,6 @@ async def handle_tb_device(conn,function_name,param_dict):
         device_views = json.loads(control_device_dict.get(sre_parse[1]))
         tb_names = param_dict.get("tb_name", None)
         if tb_names and len(device_views)>1:
-            #device_views = [e for e in device_views if e["name"] in tb_name]
             # 初始化匹配结果列表
             matched_devices = []
 

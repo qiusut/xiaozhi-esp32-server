@@ -39,9 +39,6 @@ recipe_device_function_desc = {
             f"当前支持的菜品有：{', '.join(redisClient.hkeys('recipe:nameMap'))}\n"
             "注意:当用户指定第一个或第二个这样类似的指令时要判断用户是否是在指定菜品，如果是在指定菜品就返回对话中对应的菜品名称\n"
             "特别注意:禁止偷懒,每次都需要匹配这个方法\n"
-            "示例：\n"
-            "- 用户说『做个蛋炒饭』 → 调用函数：recipe_device: Screen, action: make\n"
-            "- 用户说『蛋炒饭』 → 先判断assistant是否在询问用户要烹饪哪一个，如果是在询问则调用函数：recipe_device: Screen, action: make, isChoice: True,如果没有询问要烹饪哪一个则不调用函数而是直接询问是否需要烹饪\n"
         ),
         "parameters": {
             "type": "object",
@@ -211,8 +208,9 @@ def _recipe_device_action(conn, func, *args, **kwargs):
         new_loop.close()
     return ActionResponse(action=action, result=result, response=response)
 
-@register_function('recipe_device', recipe_device_function_desc, ToolType.IOT_CTL)
+@register_function('recipe_device', recipe_device_function_desc, ToolType.SYSTEM_CTL)
 def recipe_device(conn, action: str, values: str = None, isChoice: bool = False):
+    logger.bind(tag=TAG).info(f"成功进入了菜谱功能recipe_device方法")
     if action not in ["get", "make"]:
         raise Exception(f"未识别的动作名称: {action}")
 
