@@ -22,6 +22,11 @@ class ServerPluginExecutor(ToolExecutor):
                 action=Action.NOTFOUND, response=f"插件函数 {tool_name} 不存在"
             )
 
+        # 增加执行方法处理-qiu
+        if tool_name.startswith("tb_"):
+            arguments["function_name"] = tool_name
+        # end
+
         try:
             # 根据工具类型决定如何调用
             if hasattr(func_item, "type"):
@@ -32,9 +37,6 @@ class ServerPluginExecutor(ToolExecutor):
                     result = func_item.func(**arguments)
                 elif func_type.code == 3:  # CHANGE_SYS_PROMPT
                     result = func_item.func(conn, **arguments)
-                elif func_type.code == 9:  #ToolType.TB_CTL:
-                    #增加执行方法处理-qiu
-                    result = func_item.func(conn,tool_name, arguments)
                 else:
                     result = func_item.func(**arguments)
             else:
@@ -79,14 +81,15 @@ class ServerPluginExecutor(ToolExecutor):
                     description=func_item.description,
                     tool_type=ToolType.SERVER_PLUGIN,
                 )
-
+        # 增加tb函数-qiu
         for func_name,func_item in all_function_registry.items():
-            if func_item.type.code == 9 and func_name not in tools:
+            if func_name.startswith("tb_") and func_name not in tools:
                 tools[func_name] = ToolDefinition(
                     name=func_name,
                     description=func_item.description,
                     tool_type=ToolType.SERVER_PLUGIN,
                 )
+        # end
 
         return tools
 

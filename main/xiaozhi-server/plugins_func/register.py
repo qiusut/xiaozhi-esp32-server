@@ -18,8 +18,6 @@ class ToolType(Enum):
     IOT_CTL = (5, "IOT设备控制，需要传递conn参数")
     MCP_CLIENT = (6, "MCP客户端")
 
-    TB_CTL = (9, "TB系统控制")
-
     def __init__(self, code, message):
         self.code = code
         self.message = message

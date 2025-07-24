@@ -30,8 +30,8 @@ tb_device_function_desc = {
 }
 
 
-@register_function(tb_fun, tb_device_function_desc, ToolType.TB_CTL)
-def tb_device(conn,function_name: str,param_dict: dict):
+@register_function(tb_fun, tb_device_function_desc, ToolType.SYSTEM_CTL)
+def tb_device(conn,function_name: str,tb_name,tb_args: dict):
 
     # 创建新的事件循环
     result = None
@@ -41,7 +41,7 @@ def tb_device(conn,function_name: str,param_dict: dict):
     loop_thread.start()
     try:
         future = asyncio.run_coroutine_threadsafe(
-            handle_tb_device(conn,function_name,param_dict),
+            handle_tb_device(conn,function_name,tb_name,tb_args),
             new_loop
         )
         result = future.result()
@@ -55,7 +55,7 @@ def tb_device(conn,function_name: str,param_dict: dict):
 
     return result
 
-async def handle_tb_device(conn,function_name,param_dict):
+async def handle_tb_device(conn,function_name,tb_names,tb_args):
     logger.bind(tag=TAG).info(f"成功进入了handle_tb_device方法: {function_name}")
     tb_url = redisClient.get('tb:url')
 
@@ -87,7 +87,7 @@ async def handle_tb_device(conn,function_name,param_dict):
     else:
         sre_parse = function_name.split("_")
         device_views = json.loads(control_device_dict.get(sre_parse[1]))
-        tb_names = param_dict.get("tb_name", None)
+        #tb_names = param_dict.get("tb_name", None)
         if tb_names and len(device_views)>1:
             # 初始化匹配结果列表
             matched_devices = []
@@ -119,7 +119,7 @@ async def handle_tb_device(conn,function_name,param_dict):
                 },
                 "body": {
                     "method": method,
-                    "params": param_dict["tb_args"],
+                    "params": tb_args,
                     "persistent": False,
                     "timeout": 5000
                 }
