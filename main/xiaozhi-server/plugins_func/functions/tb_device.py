@@ -31,7 +31,7 @@ tb_device_function_desc = {
 
 
 @register_function(tb_fun, tb_device_function_desc, ToolType.SYSTEM_CTL)
-def tb_device(conn,function_name: str,tb_name,tb_args: dict):
+def tb_device(conn,function_name: str,tb_name=None,tb_args: dict=None):
 
     # 创建新的事件循环
     result = None
@@ -56,7 +56,7 @@ def tb_device(conn,function_name: str,tb_name,tb_args: dict):
     return result
 
 async def handle_tb_device(conn,function_name,tb_names,tb_args):
-    logger.bind(tag=TAG).info(f"成功进入了handle_tb_device方法: {function_name}")
+    logger.bind(tag=TAG).info(f"成功进入了tb的handle_tb_device方法: {function_name}")
     tb_url = redisClient.get('tb:url')
 
     action_response = ActionResponse(action=Action.REQLLM, result="执行成功", response=None)
@@ -74,7 +74,7 @@ async def handle_tb_device(conn,function_name,tb_names,tb_args):
     control_device_dict = redisClient.hgetall(f"tb:account:{tb_username}:control_device")
 
     if function_name == tb_fun:
-        description = "小智能为您控制的tb智能设备为："
+        description = "能为您控制的tb智能设备为："
         if control_device_dict:
 
             device_set = {tb_view["name"] for tb_value in control_device_dict.values() for tb_view in json.loads(tb_value)}
@@ -107,7 +107,7 @@ async def handle_tb_device(conn,function_name,tb_names,tb_args):
             if matched_devices:
                 device_views = matched_devices
 
-        fun_key = f"tb:device_fun:{function_name.replace('_',':')}"
+        fun_key = f"tb:device_fun:{function_name.removeprefix('tb_').replace('_',':')}"
         method = redisClient.hget(fun_key,"method")
         if len(device_views) == 1:
             tb_deviceId = device_views[0]["id"]["id"]
@@ -135,7 +135,7 @@ async def handle_tb_device(conn,function_name,tb_names,tb_args):
             names = ""
             for device_view in device_views:
                 names += device_view["name"] + ","
-            description = f"小智为您匹配到{len(device_views)}台设备,分别为{names}您要控制的是哪一台？"
+            description = f"为您匹配到{len(device_views)}台设备,分别为{names}您要控制的是哪一台？"
             action_response.action = Action.RESPONSE
 
     action_response.response = description
