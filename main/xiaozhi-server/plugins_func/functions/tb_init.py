@@ -1,8 +1,8 @@
 import copy
 import json
+
 from config.logger import setup_logging
 from config.settings import redisClient
-from core.providers.tools.base import ToolDefinition, ToolType
 from core.utils.util import check_model_key
 from core.utils.util import invoking_http_api
 from plugins_func.register import all_function_registry
@@ -26,8 +26,7 @@ def append_devices_to_prompt(conn):
         if "tb_device" in conn.config["Intent"][conn.config["selected_module"]["Intent"]].get(
                 "functions", []
         ):
-            device_id = conn.headers.get("device-id", "").replace(':', '-')
-            #user_id = redisClient.get(f"device:{device_id}:user_id")
+
             plugin_config = conn.config["plugins"]["tb_device"]
             tb_username = plugin_config.get("tb_username")
             tb_password = plugin_config.get("tb_password")
@@ -37,10 +36,6 @@ def append_devices_to_prompt(conn):
                 tbuser = getTbUser(tb_username)
 
                 tb_device_list = getTbDevices(tb_username,tbuser)
-
-                prompt = "下面是我的设备，可以通过小智控制:"
-                #if len(tb_device_list) == 0:
-                    #return
 
                 if tb_device_list:
                     tb_names = set()
@@ -89,8 +84,6 @@ def append_devices_to_prompt(conn):
                     # 遍历功能字典，注册功能
                     func = all_function_registry.get("tb_device")
                     if func:
-                        #all_tools = conn.func_handler.get_all_tools()()
-                        #print(type(all_tools))
                         for tb_key,tb_value in func_dict.items():
                             func_copy = copy.copy(func)
                             func_copy.name = tb_key

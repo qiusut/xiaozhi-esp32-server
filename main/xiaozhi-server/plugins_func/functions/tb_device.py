@@ -87,7 +87,6 @@ async def handle_tb_device(conn,function_name,tb_names,tb_args):
     else:
         sre_parse = function_name.split("_")
         device_views = json.loads(control_device_dict.get(sre_parse[1]))
-        #tb_names = param_dict.get("tb_name", None)
         if tb_names and len(device_views)>1:
             # 初始化匹配结果列表
             matched_devices = []
