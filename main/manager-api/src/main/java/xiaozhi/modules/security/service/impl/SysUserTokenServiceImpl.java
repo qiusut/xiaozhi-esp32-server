@@ -20,6 +20,7 @@ import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.dto.PasswordDTO;
 import xiaozhi.modules.sys.dto.SysUserDTO;
 import xiaozhi.modules.sys.service.SysUserService;
+import xiaozhi.modules.tb.service.TbDeviceService;
 
 @AllArgsConstructor
 @Service
@@ -27,6 +28,8 @@ public class SysUserTokenServiceImpl extends BaseServiceImpl<SysUserTokenDao, Sy
         implements SysUserTokenService {
 
     private final SysUserService sysUserService;
+
+    private final TbDeviceService tbDeviceService;
     /**
      * 12小时后过期
      */
@@ -79,6 +82,11 @@ public class SysUserTokenServiceImpl extends BaseServiceImpl<SysUserTokenDao, Sy
         tokenDTO.setToken(token);
         tokenDTO.setExpire(EXPIRE);
         tokenDTO.setClientHash(clientHash);
+
+        //qiu-生成tb系统token
+        tbDeviceService.initTbToken(null);
+
+
         return new Result<TokenDTO>().ok(tokenDTO);
     }
 

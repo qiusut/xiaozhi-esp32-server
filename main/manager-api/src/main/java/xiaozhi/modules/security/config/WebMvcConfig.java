@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.TimeZone;
 
+import cn.hutool.json.JSONNull;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.ByteArrayHttpMessageConverter;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalTimeSerializer;
 
+import xiaozhi.common.config.JsonNullSerializer;
 import xiaozhi.common.utils.DateUtils;
 
 @Configuration
@@ -90,6 +92,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(Long.class, ToStringSerializer.instance);
         simpleModule.addSerializer(Long.TYPE, ToStringSerializer.instance);
+        simpleModule.addSerializer(JSONNull.class, new JsonNullSerializer());//-qiu
         mapper.registerModule(simpleModule);
 
         converter.setObjectMapper(mapper);

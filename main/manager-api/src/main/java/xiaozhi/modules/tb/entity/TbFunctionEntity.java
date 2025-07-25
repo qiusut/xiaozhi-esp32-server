@@ -57,7 +57,7 @@ public class TbFunctionEntity {
             @Schema(description = "参数描述")
             private String description;
 
-            @Schema(description = "是否必需")
+            @Schema(description = "是否必需,1：是，0否")
             private int is_required;
 
         }

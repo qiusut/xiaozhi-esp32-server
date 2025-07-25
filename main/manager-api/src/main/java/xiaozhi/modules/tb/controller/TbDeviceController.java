@@ -7,15 +7,21 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.tb.dto.TbDeviceRpcDTO;
 import xiaozhi.modules.tb.dto.TbFunctionDTO;
 import xiaozhi.modules.tb.entity.TbFunctionEntity;
+import xiaozhi.modules.tb.query.DeviceInfoQuery;
 import xiaozhi.modules.tb.service.TbDeviceService;
 import xiaozhi.modules.tb.vo.TbFunctionVO;
+
+import java.util.List;
 
 /**
  * xiaozhi-server tb配置获取
@@ -28,6 +34,13 @@ import xiaozhi.modules.tb.vo.TbFunctionVO;
 @AllArgsConstructor
 public class TbDeviceController {
     private final TbDeviceService tbDeviceService;
+
+    @GetMapping("/infoList")
+    @Operation(summary = "tb设备列表")
+    public Result<List<JSONObject>> infoList(@ParameterObject @Valid DeviceInfoQuery query) {
+        List<JSONObject> result = tbDeviceService.infoList(query);
+        return new Result<List<JSONObject>>().ok(result);
+    }
 
     @GetMapping("/deviceTypeList")
     @Operation(summary = "方法定义列表（管理员）")
@@ -75,6 +88,12 @@ public class TbDeviceController {
     public Result<Void> delete(@PathVariable String id) {
         tbDeviceService.removeById(id);
         return new Result<>();
+    }
+
+    @PostMapping("/sendDeviceRpc")
+    @Operation(summary = "控制Rpc设备")
+    public Result<String> sendDeviceRpc(@RequestBody TbDeviceRpcDTO TbDeviceRpcDTO) {
+        return new Result<String>().ok(tbDeviceService.sendDeviceRpc(TbDeviceRpcDTO));
     }
 
 }

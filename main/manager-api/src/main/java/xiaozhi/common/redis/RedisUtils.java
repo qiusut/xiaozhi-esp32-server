@@ -196,14 +196,26 @@ public class RedisUtils {
 
 
     //qiu-start
-    public void setRawString(String key, String value) {
+    public void setRawStr(String key, String value,Long expireSeconds) {
         redisTemplate.execute((RedisConnection connection) -> {
             byte[] keyBytes = key.getBytes();
             byte[] valueBytes = value.getBytes();
             connection.stringCommands().set(keyBytes, valueBytes);
+            if (expireSeconds != null && expireSeconds > 0) {
+                connection.keyCommands().expire(keyBytes, expireSeconds);
+            }
             return null;
         });
     }
+
+    public String getRawStr(String key) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes();
+            byte[] valueBytes = connection.stringCommands().get(keyBytes);
+            return valueBytes == null ? null : new String(valueBytes);
+        });
+    }
+
 
     public void rawRightPush(String key, String value) {
         redisTemplate.execute((RedisConnection connection) -> {

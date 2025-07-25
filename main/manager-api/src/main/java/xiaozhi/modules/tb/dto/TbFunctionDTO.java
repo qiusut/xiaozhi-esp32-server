@@ -38,7 +38,7 @@ public class TbFunctionDTO {
             @Schema(description = "参数名称")
             private String name;
 
-            @Schema(description = "参数类型")
+            @Schema(description = "参数类型(string,boolean,integer,array)")
             private String type;
 
             @Schema(description = "参数描述")

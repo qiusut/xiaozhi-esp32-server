@@ -21,7 +21,7 @@
         <junit.version>5.10.1</junit.version>
         <druid.version>1.2.20</druid.version>
         <mybatisplus.version>3.5.7</mybatisplus.version>
-        <hutool.version>5.8.37</hutool.version>
+        <hutool.version>5.8.39</hutool.version>
         <jsoup.version>1.19.1</jsoup.version>
         <knife4j.version>4.6.0</knife4j.version>
         <shiro.version>2.0.2</shiro.version>
