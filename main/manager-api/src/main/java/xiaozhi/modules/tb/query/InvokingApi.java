@@ -9,8 +9,8 @@ import lombok.EqualsAndHashCode;
 @Schema(description = "Api接口调用")
 public class InvokingApi {
 
-    @Schema(description = "租户Id")
-    private Long tenantId;
+    @Schema(description = "智能体ID")
+    private String agentId;
 
     @Schema(description = "请求方式",required = true, example = "GET,POST,PUT,DELETE", nullable = true)
     private String method;
