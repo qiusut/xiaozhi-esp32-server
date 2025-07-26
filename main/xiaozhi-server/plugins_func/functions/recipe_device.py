@@ -48,7 +48,7 @@ recipe_device_function_desc = {
                     "description": "动作名称，可选值：get(获取),make(烹饪/制作)"
                 },
                 "values": {
-                    "type": "list",
+                    "type": "array",
                     "description": (
                         f"菜品名称，可选值：{redisClient.hkeys('recipe:nameMap')},匹配不到就不返回"
                         "在烹饪模式中，values 支持以下三种匹配方式：\n"

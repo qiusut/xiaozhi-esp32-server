@@ -67,7 +67,7 @@ def append_devices_to_prompt(conn):
                     # 初始化功能字典
                     func_dict = {}
                     tb_name_fun = {
-                        "type": "list",
+                        "type": "array",
                         "description": redisClient.get('tb:name_desc').format(names=tb_names)
                     }
                     # 遍历设备列表，直接构造功能字典
