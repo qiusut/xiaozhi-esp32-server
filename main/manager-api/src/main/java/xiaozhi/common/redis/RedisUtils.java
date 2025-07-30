@@ -1,9 +1,7 @@
 package xiaozhi.common.redis;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import cn.hutool.json.JSONUtil;
@@ -226,6 +224,14 @@ public class RedisUtils {
         });
     }
 
+    public String rawLeftPop(String key) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] valueBytes = connection.listCommands().lPop(keyBytes);
+            return valueBytes == null ? null : new String(valueBytes, StandardCharsets.UTF_8);
+        });
+    }
+
     public void rawHashPutAll(String key, Map<String, Object> hashEntries) {
         redisTemplate.execute((RedisConnection connection) -> {
             byte[] keyBytes = key.getBytes();
@@ -243,6 +249,63 @@ public class RedisUtils {
             byte[] fieldBytes = field.getBytes();
             byte[] valueBytes = connection.hashCommands().hGet(keyBytes, fieldBytes);
             return valueBytes == null ? null : new String(valueBytes);
+        });
+    }
+
+    public void addSetElements(String key, String... values) {
+        redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            for (String value : values) {
+                byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+                connection.setCommands().sAdd(keyBytes, valueBytes);
+            }
+            return null;
+        });
+    }
+
+    public Set<String> getSetElements(String key) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            Set<byte[]> members = connection.setCommands().sMembers(keyBytes);
+            Set<String> result = new HashSet<>();
+            if (members != null) {
+                for (byte[] member : members) {
+                    result.add(new String(member, StandardCharsets.UTF_8));
+                }
+            }
+            return result;
+        });
+    }
+
+
+    public Boolean isSetMember(String key, String value) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+            return connection.setCommands().sIsMember(keyBytes, valueBytes);
+        });
+    }
+
+    public void addZSetElement(String key, String value, double score) {
+        redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            byte[] valueBytes = value.getBytes(StandardCharsets.UTF_8);
+            connection.zSetCommands().zAdd(keyBytes, score, valueBytes);
+            return null;
+        });
+    }
+
+    public Set<String> getZSetByScore(String key, double min, double max) {
+        return redisTemplate.execute((RedisConnection connection) -> {
+            byte[] keyBytes = key.getBytes(StandardCharsets.UTF_8);
+            Set<byte[]> valueBytesSet = connection.zSetCommands().zRangeByScore(keyBytes, min, max);
+            Set<String> result = new HashSet<>();
+            if (valueBytesSet != null) {
+                for (byte[] bytes : valueBytesSet) {
+                    result.add(new String(bytes, StandardCharsets.UTF_8));
+                }
+            }
+            return result;
         });
     }
 
