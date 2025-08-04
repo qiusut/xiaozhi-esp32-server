@@ -27,42 +27,15 @@ def append_devices_to_prompt(conn):
                 "functions", []
         ):
 
-            plugin_config = conn.config["plugins"]["tb_device"]
-            tb_username = plugin_config.get("tb_username")
-            tb_password = plugin_config.get("tb_password")
-            if tb_username:
+            device_id = conn.headers.get("device-id", "").replace(':', '-')
+            user_id = redisClient.get(f"device:{device_id}:user_id")
+            if user_id:
 
-                init_tb_token(tb_username,tb_password) #初始化token
-                tbuser = getTbUser(tb_username)
+                user_key = f"tb:user:{user_id}:"
+                fun_call = redisClient.hgetall(user_key+"fun_call")
 
-                tb_device_list = getTbDevices(tb_username,tbuser)
-
-                if tb_device_list:
-                    tb_names = set()
-                    control_device_dict = {}
-                    for tb_device in tb_device_list:
-                        tb_names.add(tb_device["name"])
-                        control_device_list = control_device_dict.get(tb_device["type"], [])
-                        control_device_list.append(tb_device)
-                        control_device_dict[tb_device["type"]] = control_device_list
-
-                    # 序列化字典中的列表为 JSON 字符串
-                    control_device_dict_serialized = {k: json.dumps(v, ensure_ascii=False) for k, v in control_device_dict.items()}
-                    redisClient.hmset(f"tb:account:{tb_username}:control_device",control_device_dict_serialized)
-
-                    all_devices = redisClient.lrange('tb:device', 0, -1)
-                    device_type_dict = {}
-                    # 遍历每个元素，解析 JSON 并构建结果字典
-                    for item in all_devices:
-                        try:
-                            # 将 JSON 字符串反序列化为 Python 字典
-                            data = json.loads(item)
-                            # 检查字典中是否包含所需的键
-                            if 'type' in data and 'funs' in data:
-                                # 使用 'type' 作为键，'funs' 作为值
-                                device_type_dict[data['type']] = data['funs']
-                        except json.JSONDecodeError:
-                            print(f"无法解析 JSON: {item}")
+                if fun_call:
+                    tb_names = {json.loads(value)["name"] for key, value in fun_call.items()}
 
                     # 初始化功能字典
                     func_dict = {}
@@ -70,16 +43,22 @@ def append_devices_to_prompt(conn):
                         "type": "array",
                         "description": redisClient.get('tb:name_desc').format(names=tb_names)
                     }
-                    # 遍历设备列表，直接构造功能字典
-                    for device in tb_device_list:
-                        device_type = device.get("type")
-                        if device_type and device_type in device_type_dict:
-                            tb_funs = device_type_dict[device_type]
-                            for fun_name in tb_funs:
-                                function_call = json.loads(redisClient.hget(f"tb:device_fun:{device_type}:{fun_name}", "function_call"))
-                                properties = function_call["function"]["parameters"]["properties"]
-                                properties["tb_name"] = tb_name_fun
-                                func_dict["tb_"+device_type+"_"+fun_name] = function_call
+
+                    for key, value in fun_call.items():
+                        tb_value = json.loads(value)
+                        tb_type = tb_value["type"]
+                        tb_name = tb_value["name"]
+                        prefix = f"tb:device_fun:{tb_type}:"
+                        for method_key in redisClient.scan_iter(match=prefix+"*", count=100):
+                            method_key_prefix = method_key.removeprefix(prefix)  # 只替换第一次出现的前缀
+                            redis_function_call = redisClient.hget(method_key, "function_call")
+                            function_call = json.loads(redis_function_call
+                                                       .replace("{{name}}", tb_name)
+                                                       .replace(f"tb_{tb_type}_{method_key_prefix}",f"tb_{method_key_prefix}_{key}")
+                                                       )
+                            properties = function_call["function"]["parameters"]["properties"]
+                            properties["tb_name"] = tb_name_fun
+                            func_dict["tb_"+method_key_prefix+"_"+key] = function_call
 
                     # 遍历功能字典，注册功能
                     func = all_function_registry.get("tb_device")
@@ -96,24 +75,10 @@ def append_devices_to_prompt(conn):
                                 tool_type=ToolType.SERVER_PLUGIN,
                             )
                             """
-                else:
-                    redisClient.delete(f"tb:account:{tb_username}:control_device")
 
     except Exception as e:
         logger.bind(tag=TAG).error(f"tb初始化组件失败: {e}")
 
-
-def initialize_tb_handler(conn):
-    global TB_CACHE
-    if TB_CACHE == {}:
-        if conn.use_function_call_mode:
-            funcs = conn.config["Intent"]["function_call"].get("functions", [])
-            if "tb_device" in funcs:
-                TB_CACHE['base_url'] = conn.config["plugins"]["home_assistant"].get("base_url")
-                TB_CACHE['api_key'] = conn.config["plugins"]["home_assistant"].get("api_key")
-
-                check_model_key("home_assistant", TB_CACHE['api_key'])
-    return TB_CACHE
 
 #初始化tb系统token缓存
 def init_tb_token(tb_username,tb_password):
