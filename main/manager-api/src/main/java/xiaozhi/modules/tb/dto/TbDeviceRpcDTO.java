@@ -14,9 +14,9 @@ public class TbDeviceRpcDTO {
     @NotBlank(message = "设备id不能为空")
     private String agentId;
 
-    @Schema(description = "设备id")
-    @NotBlank(message = "设备id不能为空")
-    private String deviceId;
+    @Schema(description = "tb设备id")
+    @NotBlank(message = "tb设备id不能为空")
+    private String tbDeviceId;
 
     @NotBlank
     @Schema(description = "方法名称")

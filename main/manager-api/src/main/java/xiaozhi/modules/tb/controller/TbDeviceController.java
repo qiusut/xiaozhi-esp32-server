@@ -2,26 +2,33 @@ package xiaozhi.modules.tb.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONObject;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.recipe.entity.RecInfoEntity;
+import xiaozhi.modules.recipe.vo.RecInfoVO;
+import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.tb.dto.TbDeviceDTO;
 import xiaozhi.modules.tb.dto.TbDeviceRpcDTO;
 import xiaozhi.modules.tb.dto.TbFunctionDTO;
+import xiaozhi.modules.tb.entity.TbDeviceEntity;
 import xiaozhi.modules.tb.entity.TbFunctionEntity;
-import xiaozhi.modules.tb.query.DeviceInfoQuery;
+import xiaozhi.modules.tb.query.DeviceQueryPage;
 import xiaozhi.modules.tb.service.TbDeviceService;
+import xiaozhi.modules.tb.service.TbFunctionService;
+import xiaozhi.modules.tb.vo.TbDeviceVO;
 import xiaozhi.modules.tb.vo.TbFunctionVO;
 
-import java.util.List;
+import java.util.Map;
 
 /**
  * xiaozhi-server tb配置获取
@@ -30,63 +37,55 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("tb/device")
-@Tag(name = "TB管理")
+@Tag(name = "TB设备管理")
 @AllArgsConstructor
 public class TbDeviceController {
     private final TbDeviceService tbDeviceService;
 
-    @GetMapping("/infoList")
-    @Operation(summary = "tb设备列表")
-    public Result<List<JSONObject>> infoList(@ParameterObject @Valid DeviceInfoQuery query) {
-        List<JSONObject> result = tbDeviceService.infoList(query);
-        return new Result<List<JSONObject>>().ok(result);
-    }
+    @GetMapping("/page")
+    @Operation(operationId = "分页查询")
+    public Result<PageData<TbDeviceVO>> getPage(@ParameterObject DeviceQueryPage deviceQueryPage) {
 
-    @GetMapping("/deviceTypeList")
-    @Operation(summary = "方法定义列表（管理员）")
-    //@RequiresPermissions("sys:role:superAdmin")
-    @Parameters({
-            @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
-            @Parameter(name = Constant.LIMIT, description = "每页显示记录数", required = true),
-    })
-    public Result<PageData<TbFunctionVO>> adminAgentList(
-            @RequestParam(required = false) String type,
-            @RequestParam(required = false) String name,
-            @RequestParam(required = true, defaultValue = "1") int curPage,
-            @RequestParam(required = true, defaultValue = "10") int limit
-    ) {
-        Page<TbFunctionEntity> page = tbDeviceService.deviceTypeList(curPage, limit,type, name);
-        PageData<TbFunctionVO> pageData = new PageData<>(BeanUtil.copyToList(page.getRecords(), TbFunctionVO.class),  page.getTotal());
-        return new Result<PageData<TbFunctionVO>>().ok(pageData);
+        Page<TbDeviceEntity> page = tbDeviceService.getPage(deviceQueryPage);
+        return new Result<PageData<TbDeviceVO>>().ok(new PageData<TbDeviceVO>(BeanUtil.copyToList(page.getRecords(), TbDeviceVO.class),  page.getTotal()));
     }
 
     @GetMapping("{id}")
-    @Operation(operationId = "信息")
-    //@RequiresPermissions("sys:role:superAdmin")
-    public Result<TbFunctionVO> get(@PathVariable("id") String id) {
-        TbFunctionEntity tbFunctionEntity = tbDeviceService.getById(id);
-        return new Result<TbFunctionVO>().ok(BeanUtil.toBean(tbFunctionEntity, TbFunctionVO.class));
+    @Operation(operationId = "设备信息")
+    public Result<TbDeviceVO> get(@PathVariable("id") String id) {
+        TbDeviceVO tbDevice = tbDeviceService.getTbDevice(id);
+        return new Result<TbDeviceVO>().ok(tbDevice);
     }
 
-    @PostMapping("/addFunction")
-    @Operation(summary = "新增")
-    public Result<Void> addFunction(@RequestBody TbFunctionDTO tbFunctionDTO) {
-        tbDeviceService.addFunction(tbFunctionDTO);
+    @GetMapping("getTbDeviceByTbId/{id}")
+    @Operation(operationId = "获取tb设备信息")
+    public Result<JSONObject> getTbDeviceByTbId(@PathVariable("id") String id) {
+        return new Result<JSONObject>().ok(tbDeviceService.getTbDeviceJson(id));
+    }
+
+    @PostMapping("/addTbDevice")
+    @Operation(summary = "绑定")
+    public Result<Void> addTbDevice(@RequestBody TbDeviceDTO tbDeviceDTO) {
+        tbDeviceService.addTbDevice(tbDeviceDTO);
         return new Result<>();
     }
 
-    @PutMapping("/updateFunction")
-    @Operation(summary = "修改")
-    public Result<Void> updateFunction(@RequestBody TbFunctionVO tbFunctionVO) {
-        tbDeviceService.updateFunction(tbFunctionVO);
+    @PutMapping("/updateName")
+    @Operation(summary = "修改名称")
+    public Result<Void> updateName(@RequestBody JSONObject jsonObject) {
+        String id = jsonObject.getStr("id");
+        String name = jsonObject.getStr("name");
+        tbDeviceService.update(Wrappers.lambdaUpdate(TbDeviceEntity.class).set(TbDeviceEntity::getName,name).eq(TbDeviceEntity::getId,id));
+        tbDeviceService.initTbDeviceRedis(SecurityUser.getUserId());
         return new Result<>();
     }
+
 
     @DeleteMapping("/{id}")
-    @Operation(summary = "删除")
+    @Operation(summary = "解绑/删除")
     //@RequiresPermissions("sys:role:normal")
     public Result<Void> delete(@PathVariable String id) {
-        tbDeviceService.removeById(id);
+        tbDeviceService.deleteTbDevice(id);
         return new Result<>();
     }
 

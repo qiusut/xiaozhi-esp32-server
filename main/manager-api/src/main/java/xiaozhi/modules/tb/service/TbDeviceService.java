@@ -3,31 +3,33 @@ package xiaozhi.modules.tb.service;
 import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import xiaozhi.common.page.PageData;
+import xiaozhi.modules.tb.dto.TbDeviceDTO;
 import xiaozhi.modules.tb.dto.TbDeviceRpcDTO;
-import xiaozhi.modules.tb.dto.TbFunctionDTO;
-import xiaozhi.modules.tb.entity.TbFunctionEntity;
-import xiaozhi.modules.tb.query.DeviceInfoQuery;
-import xiaozhi.modules.tb.vo.TbFunctionVO;
+import xiaozhi.modules.tb.entity.TbDeviceEntity;
+import xiaozhi.modules.tb.query.DeviceQueryPage;
+import xiaozhi.modules.tb.vo.TbDeviceVO;
 
 import java.util.List;
 
-public interface TbDeviceService extends IService<TbFunctionEntity> {
+public interface TbDeviceService extends IService<TbDeviceEntity> {
 
-    List<JSONObject> infoList(DeviceInfoQuery query);
+    TbDeviceVO getTbDevice(String id);
 
-    public Page<TbFunctionEntity> deviceTypeList(Integer curPage, Integer limit, String type, String name);
+    JSONObject getTbDeviceJson(String tbDeviceId);
 
-    public void addFunction(TbFunctionDTO tbFunctionDTO);
+    List<JSONObject> getTbDeviceList();
 
-    public void updateFunction(TbFunctionVO tbFunctionVO);
+    Page<TbDeviceEntity> getPage(DeviceQueryPage deviceQueryPage);
 
-    List<String> initTbToken(String agentId);
+    void addTbDevice(TbDeviceDTO tbDeviceDTO);
+
+    void deleteTbDevice(String id);
+
+    String initTbToken(boolean isRefresh);
 
     String sendDeviceRpc(TbDeviceRpcDTO tbDeviceRpc);
 
+    void initTbDeviceRedis(Long userId);
+
     void initRedis();
-
-    //public void deleteByType(String type);
-
 }

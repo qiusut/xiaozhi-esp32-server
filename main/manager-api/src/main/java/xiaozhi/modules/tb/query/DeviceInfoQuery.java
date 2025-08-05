@@ -16,6 +16,9 @@ public class DeviceInfoQuery{
     @Schema(description = "智能体ID")
     private String agentId;
 
+    @Schema(description = "设备ID")
+    private String deviceId;
+
     @Schema(description = "类型")
     private String type;
 

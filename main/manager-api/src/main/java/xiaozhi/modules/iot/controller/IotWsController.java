@@ -20,6 +20,7 @@ import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.iot.dto.CommandDTO;
 import xiaozhi.modules.iot.service.IotWsService;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.tb.service.TbDeviceService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,40 +36,13 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class IotWsController {
     private final IotWsService iotWsService;
-    private final AgentDao agentDao;
-    private final DeviceDao deviceDao;
+    private final TbDeviceService tbDeviceService;
 
     @GetMapping("/deviceList")
     @Operation(summary = "获取当前用户的所有设备")
     public Result<List<JSONObject>> deviceList(@RequestParam(required = false) String agentId) {
-        UserDetail user = SecurityUser.getUser();
-        List<JSONObject> jsonObjectList = new ArrayList<>();
-        List<AgentEntity> agents = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class)
-                .eq(StrUtil.isNotBlank(agentId),AgentEntity::getId, agentId)
-                .eq(AgentEntity::getUserId, user.getId())
-        );
-        if(CollectionUtil.isNotEmpty(agents)){
-            Map<String, String> nameMap = agents.stream().collect(Collectors.toMap(AgentEntity::getId, AgentEntity::getAgentName));
-            List<DeviceEntity> agentList = deviceDao.selectList(Wrappers.lambdaQuery(DeviceEntity.class)
-                .eq(DeviceEntity::getUserId, user.getId())
-                .in(DeviceEntity::getAgentId, nameMap.keySet())
-                .orderByAsc(DeviceEntity::getAgentId,  DeviceEntity::getSort)
-            );
-
-            if(CollectionUtil.isNotEmpty(agentList)){
-                String result = iotWsService.getWs(null);
-                JSONObject result_json = JSONUtil.parseObj(result);
-                agentList.forEach(e->{
-                    JSONObject jsonObject = new JSONObject();
-                    jsonObject = JSONUtil.parseObj(e);
-                    jsonObject.set("agentName", nameMap.get(e.getAgentId()));
-                    jsonObject.set("isActive", result_json.containsKey(e.getMacAddress())? 1:0);
-                    jsonObject.set("iot",result_json.get(e.getMacAddress()));
-                    jsonObjectList.add(jsonObject);
-                });
-            }
-
-        }
+        List<JSONObject> jsonObjectList = iotWsService.deviceList(agentId);
+        jsonObjectList.addAll(tbDeviceService.getTbDeviceList());
         return new Result<List<JSONObject>>().ok(jsonObjectList);
     }
 
