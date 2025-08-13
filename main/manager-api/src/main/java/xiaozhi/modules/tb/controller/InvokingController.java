@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import xiaozhi.common.utils.ApiUtils;
 import xiaozhi.common.utils.Result;
+import xiaozhi.modules.sys.service.SysParamsService;
 import xiaozhi.modules.tb.query.InvokingApi;
 import xiaozhi.modules.tb.service.TbDeviceService;
 
@@ -31,6 +32,9 @@ public class InvokingController {
     @Resource
     private TbDeviceService tbDeviceService;
 
+    @Resource
+    private SysParamsService sysParamsService;
+
     @PostMapping("/tbHttp")
     @Operation(summary = "请求thingsBoard系统接口")
     public Result<JSON> tbHttp(@RequestBody InvokingApi invokingApi) {
@@ -39,7 +43,7 @@ public class InvokingController {
         Assert.isTrue(StringUtils.isNotBlank(tbToken),"Token为空");
 
         if(!invokingApi.getUrl().toLowerCase().startsWith("http")){
-            invokingApi.setUrl(SpringUtil.getProperty("tb.url")+invokingApi.getUrl());
+            invokingApi.setUrl(sysParamsService.getValue("tb.url", true)+"/"+invokingApi.getUrl());
         }
         InvokingApi.Headers headers = invokingApi.getHeaders();
         if(headers == null)headers = new InvokingApi.Headers();

@@ -17,6 +17,9 @@ public class TokenDTO implements Serializable {
     @Schema(description = "密码")
     private String token;
 
+    @Schema(description = "刷新Token")
+    private String refreshToken;
+
     @Schema(description = "过期时间")
     private int expire;
 

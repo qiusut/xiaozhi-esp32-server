@@ -83,10 +83,6 @@ public class SysUserTokenServiceImpl extends BaseServiceImpl<SysUserTokenDao, Sy
         tokenDTO.setExpire(EXPIRE);
         tokenDTO.setClientHash(clientHash);
 
-        //qiu-生成tb系统token
-        //tbDeviceService.initTbToken(null);
-
-
         return new Result<TokenDTO>().ok(tokenDTO);
     }
 

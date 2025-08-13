@@ -6,22 +6,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import cn.hutool.core.lang.Assert;
+import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import xiaozhi.common.annotation.RateLimit;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.exception.RenException;
 import xiaozhi.common.page.TokenDTO;
 import xiaozhi.common.user.UserDetail;
+import xiaozhi.common.utils.HttpContextUtils;
+import xiaozhi.common.utils.JwtUtil;
 import xiaozhi.common.utils.Result;
 import xiaozhi.common.validator.AssertUtils;
 import xiaozhi.common.validator.ValidatorUtils;
@@ -98,7 +97,29 @@ public class LoginController {
         if (!PasswordUtils.matches(login.getPassword(), userDTO.getPassword())) {
             throw new RenException("请检测用户和密码是否输入错误");
         }
-        return sysUserTokenService.createToken(userDTO.getId());
+
+        TokenDTO tokenDTO = new TokenDTO();
+        tokenDTO.setToken(JwtUtil.createToken(userDTO.getId(),userDTO.getUsername()));
+        tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(userDTO.getId()));
+        tokenDTO.setClientHash(HttpContextUtils.getClientCode());
+        tokenDTO.setExpire(3600);
+
+        return new Result<TokenDTO>().ok(tokenDTO);
+    }
+
+    @PostMapping("/refreshToken")
+    @Operation(summary = "刷新token")
+    @RateLimit(key_pre = "sys:refreshToken")
+    public Result<String> refreshToken(@RequestHeader("refreshToken") String refreshToken) {
+        Long userId = JwtUtil.getUserIdFromRefreshToken(refreshToken);
+
+        SysUserDTO user = sysUserService.getByUserId(userId);
+        Assert.notNull(user, "token异常，非法登入");
+
+        String newAccessToken = JwtUtil.createToken(user.getId(),user.getUsername());
+        JwtUtil.refreshAccessToken(refreshToken);
+
+        return new Result<String>().ok(newAccessToken);
     }
 
     @PostMapping("/register")

@@ -23,10 +23,10 @@ import jakarta.annotation.Resource;
 import xiaozhi.common.exception.ErrorCode;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.ConvertUtils;
+import xiaozhi.common.utils.JwtUtil;
 import xiaozhi.common.utils.MessageUtils;
 import xiaozhi.modules.security.entity.SysUserTokenEntity;
 import xiaozhi.modules.security.service.ShiroService;
-import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.enums.SuperAdminEnum;
 
@@ -40,10 +40,6 @@ public class Oauth2Realm extends AuthorizingRealm {
     @Lazy
     @Resource
     private ShiroService shiroService;
-
-    @Lazy
-    @Resource
-    private SysUserTokenService sysUserTokenService;
 
     private static final Logger logger = LoggerFactory.getLogger(Oauth2Realm.class);
 
@@ -82,14 +78,16 @@ public class Oauth2Realm extends AuthorizingRealm {
         String accessToken = (String) token.getPrincipal();
 
         // 根据accessToken，查询用户信息
-        SysUserTokenEntity tokenEntity = shiroService.getByToken(accessToken);
+        Long userId = JwtUtil.getUserIdFromToken(accessToken);
+
+        /*SysUserTokenEntity tokenEntity = shiroService.getByToken(accessToken);
         // token失效
         if (tokenEntity == null || tokenEntity.getExpireDate().getTime() < System.currentTimeMillis()) {
             throw new IncorrectCredentialsException(MessageUtils.getMessage(ErrorCode.TOKEN_INVALID));
-        }
+        }*/
 
         // 查询用户信息
-        SysUserEntity userEntity = shiroService.getUser(tokenEntity.getUserId());
+        SysUserEntity userEntity = shiroService.getUser(userId);
 
         // 转换成UserDetail对象
         UserDetail userDetail = ConvertUtils.sourceToTarget(userEntity, UserDetail.class);
@@ -107,9 +105,6 @@ public class Oauth2Realm extends AuthorizingRealm {
         }
 
         SimpleAuthenticationInfo info = new SimpleAuthenticationInfo(userDetail, accessToken, getName());
-
-        //sysUserTokenService.refExpireDate(accessToken);
-
         return info;
     }
 

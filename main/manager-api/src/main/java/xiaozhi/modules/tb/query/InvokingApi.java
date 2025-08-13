@@ -15,7 +15,7 @@ public class InvokingApi {
     @Schema(description = "请求方式",required = true, example = "GET,POST,PUT,DELETE", nullable = true)
     private String method;
 
-    @Schema(description = "接口地址",required = true)
+    @Schema(description = "接口地址",requiredMode = Schema.RequiredMode.REQUIRED)
     private String url;
 
     @Schema(description = "请求体")
