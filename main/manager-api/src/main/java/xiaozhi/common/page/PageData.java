@@ -30,4 +30,8 @@ public class PageData<T> implements Serializable {
         this.list = list;
         this.total = (int) total;
     }
+
+    public static<T> PageData<T> ok(List<T> list, long total) {
+        return new PageData<>(list, total);
+    }
 }

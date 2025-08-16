@@ -29,6 +29,7 @@ import xiaozhi.modules.security.entity.SysUserTokenEntity;
 import xiaozhi.modules.security.service.ShiroService;
 import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.enums.SuperAdminEnum;
+import xiaozhi.modules.sys.service.SysMenuService;
 
 /**
  * 认证
@@ -40,6 +41,9 @@ public class Oauth2Realm extends AuthorizingRealm {
     @Lazy
     @Resource
     private ShiroService shiroService;
+
+    @Resource
+    private SysMenuService sysMenuService;
 
     private static final Logger logger = LoggerFactory.getLogger(Oauth2Realm.class);
 
@@ -93,6 +97,8 @@ public class Oauth2Realm extends AuthorizingRealm {
         UserDetail userDetail = ConvertUtils.sourceToTarget(userEntity, UserDetail.class);
 
         userDetail.setToken(accessToken);
+
+        userDetail.setPermsSet(sysMenuService.getUserAuthority(userDetail));
 
         // 账号锁定
         if (userDetail.getStatus() == null) {

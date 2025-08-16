@@ -1,6 +1,7 @@
 package xiaozhi.common.user;
 
 import java.io.Serializable;
+import java.util.Set;
 
 import lombok.Data;
 
@@ -16,4 +17,6 @@ public class UserDetail implements Serializable {
     private Integer superAdmin;
     private String token;
     private Integer status;
+
+    private Set<String> permsSet;
 }
