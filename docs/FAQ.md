@@ -38,12 +38,14 @@ conda install conda-forge::ffmpeg
 
 | 模块名称 | 入门全免费设置 | 流式配置 |
 |:---:|:---:|:---:|
-| ASR(语音识别) | FunASR(本地) | 👍FunASRServer 或 👍DoubaoStreamASR |
-| LLM(大模型) | ChatGLMLLM(智谱glm-4-flash) | 👍DoubaoLLM(doubao-1-5-pro-32k-250115) 或 AliLLM(qwen3-235b-a22b-instruct-2507) |
+| ASR(语音识别) | FunASR(本地) | 👍FunASR(本地GPU模式) |
+| LLM(大模型) | ChatGLMLLM(智谱glm-4-flash) | 👍AliLLM(qwen3-235b-a22b-instruct-2507) 或 👍DoubaoLLM(doubao-1-5-pro-32k-250115) |
 | VLLM(视觉大模型) | ChatGLMVLLM(智谱glm-4v-flash) | 👍QwenVLVLLM(千问qwen2.5-vl-3b-instructh) |
 | TTS(语音合成) | ✅LinkeraiTTS(灵犀流式) | 👍HuoshanDoubleStreamTTS(火山双流式语音合成) 或 👍AliyunStreamTTS(阿里云流式语音合成) |
 | Intent(意图识别) | function_call(函数调用) | function_call(函数调用) |
 | Memory(记忆功能) | mem_local_short(本地短期记忆） | mem_local_short（本地短期记忆） |
+
+如果您关心各组件的耗时，请查阅[小智各组件性能测试报告](https://github.com/xinnan-tech/xiaozhi-performance-research)，可按报告中的测试方法在您的环境中实际测试。
 
 ### 6、我说话很慢，停顿时小智老是抢话 🗣️
 
@@ -58,31 +60,32 @@ VAD:
 ```
 
 ### 7、部署相关教程
-1、[如何进行最简化部署](./Deployment.md)
-2、[如何进行全模块部署](./Deployment_all.md)
-3、[如何自动拉取本项目最新代码自动编译和启动](./dev-ops-integration.md)
-4、[如何与Nginx集成](https://github.com/xinnan-tech/xiaozhi-esp32-server/issues/791)
+1、[如何进行最简化部署](./Deployment.md)<br/>
+2、[如何进行全模块部署](./Deployment_all.md)<br/>
+3、[如何自动拉取本项目最新代码自动编译和启动](./dev-ops-integration.md)<br/>
+4、[如何与Nginx集成](https://github.com/xinnan-tech/xiaozhi-esp32-server/issues/791)<br/>
 
 ### 8、编译固件相关教程
-1、[如何自己编译小智固件](./firmware-build.md)
-2、[如何基于虾哥编译好的固件修改OTA地址](./firmware-setting.md)
+1、[如何自己编译小智固件](./firmware-build.md)<br/>
+2、[如何基于虾哥编译好的固件修改OTA地址](./firmware-setting.md)<br/>
 
 ### 8、拓展相关教程
-1、[如何开启手机号码注册智控台](./ali-sms-integration.md)
-2、[如何集成HomeAssistant实现智能家居控制](./homeassistant-integration.md)
-3、[如何开启视觉模型实现拍照识物](./mcp-vision-integration.md)
-4、[如何部署MCP接入点](./mcp-endpoint-enable.md)
-5、[如何接入MCP接入点](./mcp-endpoint-integration.md)
-6、[如何开启声纹识别](./voiceprint-integration.md)
-10、[新闻插件源配置指南](./newsnow_plugin_config.md)
+1、[如何开启手机号码注册智控台](./ali-sms-integration.md)<br/>
+2、[如何集成HomeAssistant实现智能家居控制](./homeassistant-integration.md)<br/>
+3、[如何开启视觉模型实现拍照识物](./mcp-vision-integration.md)<br/>
+4、[如何部署MCP接入点](./mcp-endpoint-enable.md)<br/>
+5、[如何接入MCP接入点](./mcp-endpoint-integration.md)<br/>
+6、[如何开启声纹识别](./voiceprint-integration.md)<br/>
+10、[新闻插件源配置指南](./newsnow_plugin_config.md)<br/>
 
 ### 9、语音克隆、本地语音部署相关教程
-1、[如何部署集成index-tts本地语音](./IndexStreamTTS-deploy.md)
-2、[如何部署集成fish-speech本地语音](./fish-speech-integration.md)
-3、[如何部署集成PaddleSpeech本地语音](./paddlespeech-deploy.md)
+1、[如何部署集成index-tts本地语音](./index-stream-integration.md)<br/>
+2、[如何部署集成fish-speech本地语音](./fish-speech-integration.md)<br/>
+3、[如何部署集成PaddleSpeech本地语音](./paddlespeech-deploy.md)<br/>
 
 ### 10、性能测试教程
-1、[各组件速度测试指南](./performance_tester.md)
+1、[各组件速度测试指南](./performance_tester.md)<br/>
+2、[定期公开测试结果](https://github.com/xinnan-tech/xiaozhi-performance-research)<br/>
 
 ### 13、更多问题，可联系我们反馈 💬
 
