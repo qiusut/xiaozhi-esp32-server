@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
-import xiaozhi.modules.tb.dto.TbDeviceRpcDTO;
 import xiaozhi.modules.tb.dto.TbFunctionDTO;
 import xiaozhi.modules.tb.entity.TbFunctionEntity;
 import xiaozhi.modules.tb.service.TbDeviceService;

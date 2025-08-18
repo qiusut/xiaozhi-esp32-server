@@ -5,30 +5,19 @@ import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
-import xiaozhi.common.constant.Constant;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
-import xiaozhi.modules.recipe.entity.RecInfoEntity;
-import xiaozhi.modules.recipe.vo.RecInfoVO;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.tb.dto.TbDeviceDTO;
 import xiaozhi.modules.tb.dto.TbDeviceRpcDTO;
-import xiaozhi.modules.tb.dto.TbFunctionDTO;
 import xiaozhi.modules.tb.entity.TbDeviceEntity;
-import xiaozhi.modules.tb.entity.TbFunctionEntity;
 import xiaozhi.modules.tb.query.DeviceQueryPage;
 import xiaozhi.modules.tb.service.TbDeviceService;
-import xiaozhi.modules.tb.service.TbFunctionService;
 import xiaozhi.modules.tb.vo.TbDeviceVO;
-import xiaozhi.modules.tb.vo.TbFunctionVO;
-
-import java.util.Map;
 
 /**
  * xiaozhi-server tb配置获取

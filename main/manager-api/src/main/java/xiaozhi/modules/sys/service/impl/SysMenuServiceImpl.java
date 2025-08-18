@@ -24,6 +24,7 @@ import xiaozhi.modules.sys.utils.RequiresPermissionsUtil;
 import xiaozhi.modules.sys.vo.SysMenuVO;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 菜单管理
@@ -164,20 +165,28 @@ public class SysMenuServiceImpl extends ServiceImpl<SysMenuDao, SysMenuEntity> i
         // 系统管理员，拥有最高权限
         List<String> authorityList;
         if (user.getSuperAdmin().equals(SuperAdminEnum.YES.value())) {
-            // authorityList = baseMapper.getAuthorityList();
-            authorityList = RequiresPermissionsUtil.getRequiresPermissionsList();
+            authorityList = baseMapper.getUserAuthorityList(user.getId());
+            authorityList.addAll(RequiresPermissionsUtil.getRequiresPermissionsList());
         } else {
             authorityList = baseMapper.getUserAuthorityList(user.getId());
         }
+        Set<String> permsSet = new HashSet<>();
+        if(CollUtil.isNotEmpty(authorityList)){
+            permsSet = authorityList.stream()
+                    .filter(StrUtil::isNotBlank)
+                    .distinct()
+                    .flatMap(authority -> Arrays.stream(authority.trim().split(",")))
+                    .collect(Collectors.toSet());
+        }
 
         // 用户权限列表
-        Set<String> permsSet = new HashSet<>();
+        /*Set<String> permsSet = new HashSet<>();
         for (String authority : authorityList) {
             if (StrUtil.isBlank(authority)) {
                 continue;
             }
             permsSet.addAll(Arrays.asList(authority.trim().split(",")));
-        }
+        }*/
 
         return permsSet;
     }

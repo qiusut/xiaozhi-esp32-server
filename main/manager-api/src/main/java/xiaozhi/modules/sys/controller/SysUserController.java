@@ -6,7 +6,6 @@ import cn.hutool.core.lang.Assert;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
-import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.query.SysUserQuery;
@@ -38,7 +36,6 @@ import java.util.List;
 public class SysUserController {
     private final SysUserPlusService sysUserPlusService;
     private final SysUserRoleService sysUserRoleService;
-    private final SysRoleService sysRoleService;
     private final DeviceService deviceService;
     private final TbDeviceService tbDeviceService;
 

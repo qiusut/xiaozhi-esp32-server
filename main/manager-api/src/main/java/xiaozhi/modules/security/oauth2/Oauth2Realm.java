@@ -1,13 +1,11 @@
 package xiaozhi.modules.security.oauth2;
 
-import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
 import org.apache.shiro.authc.DisabledAccountException;
-import org.apache.shiro.authc.IncorrectCredentialsException;
 import org.apache.shiro.authc.LockedAccountException;
 import org.apache.shiro.authc.SimpleAuthenticationInfo;
 import org.apache.shiro.authz.AuthorizationInfo;
@@ -25,10 +23,8 @@ import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.ConvertUtils;
 import xiaozhi.common.utils.JwtUtil;
 import xiaozhi.common.utils.MessageUtils;
-import xiaozhi.modules.security.entity.SysUserTokenEntity;
 import xiaozhi.modules.security.service.ShiroService;
 import xiaozhi.modules.sys.entity.SysUserEntity;
-import xiaozhi.modules.sys.enums.SuperAdminEnum;
 import xiaozhi.modules.sys.service.SysMenuService;
 
 /**
@@ -60,14 +56,7 @@ public class Oauth2Realm extends AuthorizingRealm {
         UserDetail user = (UserDetail) principals.getPrimaryPrincipal();
 
         // 用户权限列表
-        Set<String> permsSet = new HashSet<>();
-
-        if (user.getSuperAdmin() == SuperAdminEnum.YES.value()) {
-            permsSet.add("sys:role:superAdmin");
-            permsSet.add("sys:role:normal");
-        } else {
-            permsSet.add("sys:role:normal");
-        }
+        Set<String> permsSet = sysMenuService.getUserAuthority(user);
 
         SimpleAuthorizationInfo info = new SimpleAuthorizationInfo();
         info.setStringPermissions(permsSet);

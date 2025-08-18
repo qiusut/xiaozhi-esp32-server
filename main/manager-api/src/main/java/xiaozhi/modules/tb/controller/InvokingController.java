@@ -1,6 +1,5 @@
 package xiaozhi.modules.tb.controller;
 
-import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
