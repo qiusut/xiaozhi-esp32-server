@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.constant.Constant;
@@ -48,6 +49,7 @@ public class RecommendController {
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
             @Parameter(name = Constant.LIMIT, description = "每页显示记录数", required = true)
     })
+    //@RequiresPermissions("recipe:commend:page")
     public Result<PageData<RecommendVO>> page(@Parameter(hidden = true) @RequestParam Map<String, Object> params) {
 
         Page<RecommendEntity> page = recommendService.getPage(params);
@@ -89,6 +91,7 @@ public class RecommendController {
     @PostMapping("/pass/{id}")
     @Operation(operationId = "推荐通过")
     @LogOperation("推荐通过")
+    @RequiresPermissions("recipe:commend:pass")
     public Result<Void> pass(@PathVariable("id") String id,@RequestParam(required = false,name = "审核意见") String auditIdea) {
 
         recommendService.pass(id,auditIdea);
@@ -99,6 +102,7 @@ public class RecommendController {
     @PostMapping("/reject/{id}")
     @Operation(operationId = "推荐驳回")
     @LogOperation("推荐驳回")
+    @RequiresPermissions("recipe:commend:reject")
     public Result<Void> reject(@PathVariable(name = "id") String id,@RequestParam(required = false,name = "审核意见") String auditIdea) {
 
         recommendService.update(Wrappers.lambdaUpdate(RecommendEntity.class).eq(RecommendEntity::getId,id)

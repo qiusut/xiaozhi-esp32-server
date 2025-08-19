@@ -13,9 +13,13 @@ import lombok.Data;
 @Schema(description = "登录表单")
 public class LoginDTO implements Serializable {
 
-    @Schema(description = "手机号码")
-    @NotBlank(message = "{sysuser.username.require}")
+    @Schema(description = "用户名")
+    //@NotBlank(message = "{sysuser.username.require}")
     private String username;
+
+    @Schema(description = "手机号")
+    //@NotBlank(message = "{sysuser.mobile.require}")
+    private String mobile;
 
     @Schema(description = "密码")
     @NotBlank(message = "{sysuser.password.require}")

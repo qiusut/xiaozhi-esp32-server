@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.page.PageData;
@@ -54,6 +55,7 @@ public class TbDeviceController {
 
     @PostMapping("/addTbDevice")
     @Operation(summary = "绑定")
+    @RequiresPermissions("tb:device:addTbDevice")
     public Result<Void> addTbDevice(@RequestBody TbDeviceDTO tbDeviceDTO) {
         tbDeviceService.addTbDevice(tbDeviceDTO);
         return new Result<>();
@@ -72,8 +74,8 @@ public class TbDeviceController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "解绑/删除")
-    //@RequiresPermissions("sys:role:normal")
-    public Result<Void> delete(@PathVariable String id) {
+    @RequiresPermissions("tb:device:unbind")
+    public Result<Void> unbind(@PathVariable String id) {
         tbDeviceService.deleteTbDevice(id);
         return new Result<>();
     }

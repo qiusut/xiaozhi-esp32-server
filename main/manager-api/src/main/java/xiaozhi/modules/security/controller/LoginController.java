@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -82,11 +84,13 @@ public class LoginController {
     @PostMapping("/login")
     @Operation(summary = "登录")
     public Result<TokenDTO> login(@RequestBody LoginDTO login) {
+        Assert.isTrue(StrUtil.isNotBlank(login.getUsername()), "用户名不能为空");
         // 验证是否正确输入验证码
         boolean validate = captchaService.validate(login.getCaptchaId(), login.getCaptcha(), true);
         if (!validate) {
             throw new RenException("图形验证码错误，请重新获取");
         }
+
         // 按照用户名获取用户
         SysUserDTO userDTO = sysUserService.getByUsername(login.getUsername());
         // 判断用户是否存在
@@ -110,16 +114,18 @@ public class LoginController {
     @PostMapping("/refreshToken")
     @Operation(summary = "刷新token")
     @RateLimit(key_pre = "sys:refreshToken")
-    public Result<String> refreshToken(@RequestHeader("refreshToken") String refreshToken) {
+    public Result<JSONObject> refreshToken(@RequestHeader("refreshToken") String refreshToken) {
+        System.out.println("请求刷新token接口refreshToken:" + refreshToken);
         Long userId = JwtUtil.getUserIdFromRefreshToken(refreshToken);
 
         SysUserDTO user = sysUserService.getByUserId(userId);
         Assert.notNull(user, "token异常，非法登入");
 
-        String newAccessToken = JwtUtil.createToken(user.getId(),user.getUsername());
-        JwtUtil.refreshAccessToken(refreshToken);
+        JSONObject result = new JSONObject();
+        result.set("accessToken", JwtUtil.createToken(user.getId(),user.getUsername()));
+        result.set("refreshToken", JwtUtil.createRefreshToken(user.getId()));
 
-        return new Result<String>().ok(newAccessToken);
+        return new Result<JSONObject>().ok(result);
     }
 
     @PostMapping("/register")

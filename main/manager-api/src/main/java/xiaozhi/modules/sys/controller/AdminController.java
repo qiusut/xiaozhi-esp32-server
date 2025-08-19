@@ -45,7 +45,7 @@ public class AdminController {
 
     @GetMapping("/users")
     @Operation(summary = "分页查找用户")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:user:list")
     @Parameters({
             @Parameter(name = "mobile", description = "用户手机号码", required = false),
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
@@ -64,7 +64,7 @@ public class AdminController {
 
     @PutMapping("/users/{id}")
     @Operation(summary = "重置密码")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:user:resetPassword")
     public Result<String> update(
             @PathVariable Long id) {
         String password = sysUserService.resetPassword(id);
@@ -73,7 +73,7 @@ public class AdminController {
 
     @DeleteMapping("/users/{id}")
     @Operation(summary = "用户删除")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:user:delete")
     public Result<Void> delete(@PathVariable Long id) {
         sysUserService.deleteById(id);
         return new Result<>();
@@ -81,7 +81,7 @@ public class AdminController {
 
     @PutMapping("/users/changeStatus/{status}")
     @Operation(summary = "批量修改用户状态")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:user:changeStatus")
     @Parameter(name = "status", description = "用户状态", required = true)
     public Result<Void> changeStatus(@PathVariable Integer status, @RequestBody String[] userIds) {
         sysUserService.changeStatus(status, userIds);
@@ -90,7 +90,7 @@ public class AdminController {
 
     @GetMapping("/device/all")
     @Operation(summary = "分页查找设备")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:user:device:all")
     @Parameters({
             @Parameter(name = "keywords", description = "设备关键词", required = false),
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),

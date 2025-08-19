@@ -60,7 +60,7 @@ public class OTAMagController {
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
             @Parameter(name = Constant.LIMIT, description = "每页显示记录数", required = true)
     })
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("otaMag")
     public Result<PageData<OtaEntity>> page(@Parameter(hidden = true) @RequestParam Map<String, Object> params) {
         ValidatorUtils.validateEntity(params);
         PageData<OtaEntity> page = otaService.page(params);
@@ -69,7 +69,7 @@ public class OTAMagController {
 
     @GetMapping("{id}")
     @Operation(summary = "信息 OTA 固件信息")
-    @RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("sys:role:superAdmin")
     public Result<OtaEntity> get(@PathVariable("id") String id) {
         OtaEntity data = otaService.selectById(id);
         return new Result<OtaEntity>().ok(data);
@@ -77,7 +77,7 @@ public class OTAMagController {
 
     @PostMapping
     @Operation(summary = "保存 OTA 固件信息")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("otaMag:save")
     public Result<Void> save(@RequestBody OtaEntity entity) {
         if (entity == null) {
             return new Result<Void>().error("固件信息不能为空");
@@ -101,7 +101,7 @@ public class OTAMagController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "OTA 删除")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("otaMag:delete")
     public Result<Void> delete(@PathVariable("id") String[] ids) {
         if (ids == null || ids.length == 0) {
             return new Result<Void>().error("删除的固件ID不能为空");
@@ -112,7 +112,7 @@ public class OTAMagController {
 
     @PutMapping("/{id}")
     @Operation(summary = "修改 OTA 固件信息")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("otaMag:update")
     public Result<?> update(@PathVariable("id") String id, @RequestBody OtaEntity entity) {
         if (entity == null) {
             return new Result<>().error("固件信息不能为空");
@@ -128,7 +128,7 @@ public class OTAMagController {
 
     @GetMapping("/getDownloadUrl/{id}")
     @Operation(summary = "获取 OTA 固件下载链接")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("otaMag")
     public Result<String> getDownloadUrl(@PathVariable("id") String id) {
         String uuid = UUID.randomUUID().toString();
         redisUtils.set(RedisKeys.getOtaIdKey(uuid), id);
@@ -230,7 +230,7 @@ public class OTAMagController {
 
     @PostMapping("/upload")
     @Operation(summary = "上传固件文件")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("otaMag")
     public Result<String> uploadFirmware(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
             return new Result<String>().error("上传文件不能为空");

@@ -35,10 +35,12 @@ public class CommonAspect {
         RRateLimiter rateLimiter = redissonClient.getRateLimiter(key);
         boolean firstTime = rateLimiter.trySetRate(RateType.OVERALL, 1, Duration.ofSeconds(rateLimit.seconds()));
 
+        if(firstTime){
+            rateLimiter.expire(Duration.ofSeconds(rateLimit.seconds())); // 设置过期时间
+        }
+
         // 拦截重复请求
         Assert.isTrue(rateLimiter.tryAcquire()&&firstTime, "限定时间内重复请求，已忽略");
-
-        rateLimiter.expire(Duration.ofSeconds(rateLimit.seconds())); // 设置过期时间
 
         // 继续执行原方法
         return pjp.proceed();

@@ -1,5 +1,6 @@
 package xiaozhi.modules.sys.entity;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -17,5 +18,9 @@ public class SysRoleMenuEntity extends BaseEntity {
 
     @Schema(description = "菜单ID")
 	private Long menuId;
+
+    @Schema(description = "删除标识  0：正常   1：已删除")
+    @TableLogic
+    private Integer deleted;
 
 }

@@ -41,7 +41,7 @@ public class SysUserController {
 
     @GetMapping("page")
     @Operation(summary = "分页")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:user:list")
     public Result<PageData<SysUserVO>> page(@ParameterObject @Valid SysUserQuery query) {
         PageData<SysUserVO> page = sysUserPlusService.page(query);
         return Result.okResult(page);
@@ -75,8 +75,8 @@ public class SysUserController {
     @PostMapping("role/{userId}")
     @Operation(summary = "给用户分配角色")
     @LogOperation("给用户分配角色")
-    @RequiresPermissions("sys:role:superAdmin")
-    public Result<String> userSave(@PathVariable("userId") Long userId, @RequestBody List<Long> roleList) {
+    @RequiresPermissions("admin:user:role:assign")
+    public Result<String> assignRole(@PathVariable("userId") Long userId, @RequestBody List<Long> roleList) {
         Assert.isTrue(CollUtil.isNotEmpty(roleList), "roledList is empty!");
         SysUserEntity entity = sysUserPlusService.getById(userId);
         Assert.isTrue(entity != null, "用户不存在!");

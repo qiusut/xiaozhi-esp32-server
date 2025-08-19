@@ -49,7 +49,7 @@ public class ServerSideManageController {
 
     @Operation(summary = "获取Ws服务端列表")
     @GetMapping("/server-list")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:server:server-list")
     public Result<List<String>> getWsServerList() {
         String wsText = sysParamsService.getValue(Constant.SERVER_WEBSOCKET, true);
         if (StringUtils.isBlank(wsText)) {

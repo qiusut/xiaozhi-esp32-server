@@ -1,15 +1,12 @@
 package xiaozhi.modules.recipe.controller;
 
-import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.json.JSONObject;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.constant.Constant;
@@ -17,19 +14,12 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.common.utils.Result;
 import xiaozhi.modules.recipe.dto.RecInfoDTO;
 import xiaozhi.modules.recipe.entity.RecInfoEntity;
-import xiaozhi.modules.recipe.entity.RecommendEntity;
-import xiaozhi.modules.recipe.service.RecClassifyService;
 import xiaozhi.modules.recipe.service.RecInfoService;
-import xiaozhi.modules.recipe.service.RecProcessService;
 import xiaozhi.modules.recipe.service.RecommendService;
-import xiaozhi.modules.recipe.vo.RecInfoServerVO;
 import xiaozhi.modules.recipe.vo.RecInfoVO;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 菜单信息管理
@@ -49,7 +39,7 @@ public class RecInfoController {
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
             @Parameter(name = Constant.LIMIT, description = "每页显示记录数", required = true)
     })
-    //@RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("recipe:info:page")
     public Result<PageData<RecInfoVO>> page(@Parameter(hidden = true) @RequestParam Map<String, Object> params) {
 
         Page<RecInfoEntity> page = recInfoService.getPage(params);
@@ -72,7 +62,7 @@ public class RecInfoController {
     @PostMapping
     @Operation(operationId = "保存")
     @LogOperation("保存")
-    //@RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("recipe:info:save")
     public Result<Void> save(@RequestBody RecInfoDTO dto) {
         recInfoService.add(dto);
         return new Result<Void>();
@@ -81,7 +71,7 @@ public class RecInfoController {
     @PutMapping
     @Operation(operationId = "修改")
     @LogOperation("修改")
-    //@RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("recipe:info:update")
     public Result<Void> update(@RequestBody RecInfoVO vo) {
         recInfoService.edit(vo);
         return new Result<Void>();
@@ -89,7 +79,7 @@ public class RecInfoController {
 
     @DeleteMapping("/{id}")
     @Operation(operationId = "删除模型配置")
-    //@RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("recipe:info:delete")
     public Result<Void> delete(@PathVariable String id) {
         recInfoService.delete(id);
         return new Result<Void>();

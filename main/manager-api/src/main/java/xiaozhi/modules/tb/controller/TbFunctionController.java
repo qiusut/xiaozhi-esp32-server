@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.constant.Constant;
 import xiaozhi.common.page.PageData;
@@ -40,7 +41,7 @@ public class TbFunctionController {
 
     @GetMapping("/deviceTypeList")
     @Operation(summary = "方法定义列表（管理员）")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("tb:function:deviceTypeList")
     @Parameters({
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
             @Parameter(name = Constant.LIMIT, description = "每页显示记录数", required = true),
@@ -66,6 +67,7 @@ public class TbFunctionController {
 
     @PostMapping("/addFunction")
     @Operation(summary = "新增")
+    @RequiresPermissions("tb:function:addFunction")
     public Result<Void> addFunction(@RequestBody TbFunctionDTO tbFunctionDTO) {
         tbFunctionService.addFunction(tbFunctionDTO);
         return new Result<>();
@@ -73,6 +75,7 @@ public class TbFunctionController {
 
     @PutMapping("/updateFunction")
     @Operation(summary = "修改")
+    @RequiresPermissions("tb:function:updateFunction")
     public Result<Void> updateFunction(@RequestBody TbFunctionVO tbFunctionVO) {
         tbFunctionService.updateFunction(tbFunctionVO);
         return new Result<>();
@@ -80,7 +83,7 @@ public class TbFunctionController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除")
-    //@RequiresPermissions("sys:role:normal")
+    @RequiresPermissions("tb:function:delete")
     public Result<Void> delete(@PathVariable String id) {
         tbFunctionService.removeById(id);
         return new Result<>();

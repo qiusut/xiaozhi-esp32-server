@@ -47,7 +47,7 @@ public class AgentVoicePrintController {
 
     @PutMapping
     @Operation(summary = "更新智能体的对应声纹")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> update(@RequestBody @Valid AgentVoicePrintUpdateDTO dto) {
         Long userId = SecurityUser.getUserId();
         boolean b = agentVoicePrintService.update(userId, dto);
@@ -59,7 +59,7 @@ public class AgentVoicePrintController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "删除智能体对应声纹")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> delete(@PathVariable String id) {
         Long userId = SecurityUser.getUserId();
         // 先删除关联的设备
@@ -72,7 +72,7 @@ public class AgentVoicePrintController {
 
     @GetMapping("/list/{id}")
     @Operation(summary = "获取用户指定智能体声纹列表")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<List<AgentVoicePrintVO>> list(@PathVariable String id) {
         String voiceprintUrl = sysParamsService.getValue("server.voice_print", true);
         if (StringUtils.isBlank(voiceprintUrl) || "null".equals(voiceprintUrl)) {

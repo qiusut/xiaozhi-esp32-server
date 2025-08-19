@@ -61,7 +61,7 @@ public class SysParamsController {
             @Parameter(name = Constant.ORDER, description = "排序方式，可选值(asc、desc)", in = ParameterIn.QUERY, ref = "String"),
             @Parameter(name = "paramCode", description = "参数编码或参数备注", in = ParameterIn.QUERY, ref = "String")
     })
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:params:page")
     public Result<PageData<SysParamsDTO>> page(@Parameter(hidden = true) @RequestParam Map<String, Object> params) {
         PageData<SysParamsDTO> page = sysParamsService.page(params);
 
@@ -70,7 +70,7 @@ public class SysParamsController {
 
     @GetMapping("{id}")
     @Operation(summary = "信息")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:params:get")
     public Result<SysParamsDTO> get(@PathVariable("id") Long id) {
         SysParamsDTO data = sysParamsService.get(id);
 
@@ -80,7 +80,7 @@ public class SysParamsController {
     @PostMapping
     @Operation(summary = "保存")
     @LogOperation("保存")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:params:save")
     public Result<Void> save(@RequestBody SysParamsDTO dto) {
         // 效验数据
         ValidatorUtils.validateEntity(dto, AddGroup.class, DefaultGroup.class);
@@ -93,7 +93,7 @@ public class SysParamsController {
     @PutMapping
     @Operation(summary = "修改")
     @LogOperation("修改")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:params:update")
     public Result<Void> update(@RequestBody SysParamsDTO dto) {
         // 效验数据
         ValidatorUtils.validateEntity(dto, UpdateGroup.class, DefaultGroup.class);
@@ -152,7 +152,7 @@ public class SysParamsController {
     @PostMapping("/delete")
     @Operation(summary = "删除")
     @LogOperation("删除")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("admin:params:delete")
     public Result<Void> delete(@RequestBody String[] ids) {
         // 效验数据
         AssertUtils.isArrayEmpty(ids, "id");

@@ -44,7 +44,7 @@ public class DeviceController {
 
     @PostMapping("/bind/{agentId}/{deviceCode}")
     @Operation(summary = "绑定设备")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> bindDevice(@PathVariable String agentId, @PathVariable String deviceCode) {
         deviceService.deviceActivation(agentId, deviceCode);
         return new Result<>();
@@ -71,7 +71,7 @@ public class DeviceController {
 
     @GetMapping("/bind/{agentId}")
     @Operation(summary = "获取已绑定设备")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<List<DeviceEntity>> getUserDevices(@PathVariable String agentId) {
         UserDetail user = SecurityUser.getUser();
         List<DeviceEntity> devices = deviceService.getUserDevices(user.getId(), agentId);
@@ -80,7 +80,7 @@ public class DeviceController {
 
     @PostMapping("/unbind")
     @Operation(summary = "解绑设备")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> unbindDevice(@RequestBody DeviceUnBindDTO unDeviveBind) {
         UserDetail user = SecurityUser.getUser();
         deviceService.unbindDevice(user.getId(), unDeviveBind.getDeviceId());
@@ -89,7 +89,7 @@ public class DeviceController {
 
     @PutMapping("/update/{id}")
     @Operation(summary = "更新设备信息")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> updateDeviceInfo(@PathVariable String id, @Valid @RequestBody DeviceUpdateDTO deviceUpdateDTO) {
         DeviceEntity entity = deviceService.selectById(id);
         if (entity == null) {
@@ -106,7 +106,7 @@ public class DeviceController {
 
     @PostMapping("/manual-add")
     @Operation(summary = "手动添加设备")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> manualAddDevice(@RequestBody @Valid DeviceManualAddDTO dto) {
         UserDetail user = SecurityUser.getUser();
         deviceService.manualAddDevice(user.getId(), dto);
@@ -115,7 +115,7 @@ public class DeviceController {
 
     @PostMapping("/update")
     @Operation(summary = "修改设备")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<Void> update(@RequestBody DeviceUpdateDTO dto) {
         deviceService.updateAlias(dto);
 
@@ -125,7 +125,7 @@ public class DeviceController {
 
     @GetMapping("/{deviceId}")
     @Operation(summary = "获取设备详情")
-    @RequiresPermissions("sys:role:normal")
+    //@RequiresPermissions("sys:role:normal")
     public Result<DeviceEntity> getDeviceView(@PathVariable String deviceId) {
         DeviceEntity entity = deviceService.selectById(deviceId);
         return new Result<DeviceEntity>().ok(entity);

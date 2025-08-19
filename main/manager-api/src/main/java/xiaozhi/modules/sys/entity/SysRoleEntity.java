@@ -34,4 +34,8 @@ public class SysRoleEntity extends BaseEntity {
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private Date updateDate;
 
+    @Schema(description = "删除标识  0：正常   1：已删除")
+    @TableLogic
+    private Integer deleted;
+
 }

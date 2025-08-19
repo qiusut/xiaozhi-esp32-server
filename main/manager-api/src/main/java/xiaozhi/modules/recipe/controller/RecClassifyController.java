@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.utils.Result;
@@ -30,6 +31,7 @@ public class RecClassifyController {
 
     @Operation(operationId = "获取Tree")
     @PostMapping("getTree")
+    //@RequiresPermissions("recipe:classify:getTree")
     public Result<List<Tree<String>>> getTree() {
 
         List<Tree<String>> treeList = recClassifyService.getTree();
@@ -49,7 +51,7 @@ public class RecClassifyController {
     @PostMapping
     @Operation(operationId = "分类保存")
     @LogOperation("分类保存")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("recipe:classify:save")
     public Result<Void> save(@RequestBody RecClassifyDTO dto) {
         RecClassifyEntity entity = BeanUtil.copyProperties(dto, RecClassifyEntity.class);
         if (StrUtil.isBlank(entity.getParentId())) {
@@ -66,7 +68,7 @@ public class RecClassifyController {
     @PutMapping
     @Operation(operationId = "分类修改")
     @LogOperation("分类修改")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("recipe:classify:update")
     public Result<Void> update(@RequestBody RecClassifyVO vo) {
         RecClassifyEntity entity_old = recClassifyService.getById(vo.getId());
         if(!StrUtil.equals(entity_old.getParentId(),vo.getParentId())){
@@ -81,7 +83,7 @@ public class RecClassifyController {
     @PostMapping("delete")
     @Operation(operationId = "分类删除")
     @LogOperation("分类删除")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("recipe:classify:delete")
     public Result<Void> delete(@RequestBody String[] ids) {
         // 效验数据
         AssertUtils.isArrayEmpty(ids, "id");

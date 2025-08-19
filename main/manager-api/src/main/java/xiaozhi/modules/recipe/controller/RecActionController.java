@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Parameters;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.constant.Constant;
@@ -38,7 +39,7 @@ public class RecActionController {
             @Parameter(name = Constant.PAGE, description = "当前页码，从1开始", required = true),
             @Parameter(name = Constant.LIMIT, description = "每页显示记录数", required = true)
     })
-    //@RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("recipe:action:page")
     public Result<PageData<RecActionVO>> page(@Parameter(hidden = true) @RequestParam Map<String, Object> params) {
 
         Page<RecActionEntity> page = recActionService.getPage(params);
@@ -68,7 +69,7 @@ public class RecActionController {
     @PostMapping
     @Operation(summary = "操作保存")
     @LogOperation("操作保存")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("recipe:action:save")
     public Result<Void> save(@RequestBody RecActionDTO dto) {
         RecActionEntity entity = BeanUtil.copyProperties(dto, RecActionEntity.class);
         //entity.setCreateDate(new Date());
@@ -80,7 +81,7 @@ public class RecActionController {
     @PutMapping
     @Operation(summary = "操作修改")
     @LogOperation("操作修改")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("recipe:action:update")
     public Result<Void> update(@RequestBody RecActionVO vo) {
         RecActionEntity entity = BeanUtil.copyProperties(vo, RecActionEntity.class);
         recActionService.updateById(entity);
@@ -90,7 +91,7 @@ public class RecActionController {
     @PostMapping("/delete")
     @Operation(summary = "操作删除")
     @LogOperation("操作删除")
-    //@RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("recipe:action:delete")
     public Result<Void> delete(@RequestBody String[] ids) {
         // 效验数据
         AssertUtils.isArrayEmpty(ids, "id");

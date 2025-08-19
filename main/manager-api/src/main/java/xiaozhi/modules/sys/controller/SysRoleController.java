@@ -41,7 +41,7 @@ public class SysRoleController {
 
     @GetMapping("page")
     @Operation(summary = "分页")
-    //@RequiresPermissions("sys:role:page")
+    @RequiresPermissions("admin:role:list")
     public Result<PageData<SysRoleVO>> page(@ParameterObject @Valid SysRoleQuery query) {
         Page<SysRoleEntity> page = sysRoleService.page(query);
         return Result.okResult(PageData.ok(BeanUtil.copyToList(page.getRecords(), SysRoleVO.class),page.getTotal()));
@@ -49,7 +49,7 @@ public class SysRoleController {
 
     @GetMapping("list")
     @Operation(summary = "列表")
-    //@RequiresPermissions("sys:role:list")
+    @RequiresPermissions("admin:role:list")
     public Result<List<SysRoleVO>> list() {
         List<SysRoleVO> list = sysRoleService.getList(new SysRoleQuery());
 
@@ -75,7 +75,7 @@ public class SysRoleController {
     @PostMapping
     @Operation(summary = "保存")
     @LogOperation("新增角色")
-    //@RequiresPermissions("sys:role:save")
+    @RequiresPermissions("sys:role:save")
     public Result<String> save(@RequestBody @Valid SysRoleVO vo) {
         sysRoleService.save(vo);
 
@@ -85,7 +85,7 @@ public class SysRoleController {
     @PutMapping
     @Operation(summary = "修改")
     @LogOperation("修改角色")
-    //@RequiresPermissions("sys:role:update")
+    @RequiresPermissions("sys:role:update")
     public Result<String> update(@RequestBody @Valid SysRoleVO vo) {
         sysRoleService.update(vo);
 
@@ -105,7 +105,7 @@ public class SysRoleController {
     @PostMapping("/delete")
     @Operation(summary = "删除")
     @LogOperation("删除角色")
-    //@RequiresPermissions("sys:role:delete")
+    @RequiresPermissions("sys:role:delete")
     public Result<String> delete(@RequestBody Long[] idList) {
         if(ObjectUtil.isNotEmpty(idList)){
             sysRoleService.delete(CollUtil.toList(idList));
@@ -136,7 +136,7 @@ public class SysRoleController {
     @DeleteMapping("user/{roleId}")
     @Operation(summary = "删除角色用户")
     @LogOperation("删除角色用户")
-    //@RequiresPermissions("sys:role:update")
+    @RequiresPermissions("sys:role:update")
     public Result<String> userDelete(@PathVariable("roleId") Long roleId, @RequestBody List<Long> userIdList) {
         sysUserRoleService.deleteByUserIdList(roleId, userIdList);
 
@@ -146,7 +146,7 @@ public class SysRoleController {
     @PostMapping("user/{roleId}")
     @Operation(summary = "分配角色给用户列表")
     @LogOperation("分配角色给用户列表")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("sys:role:update")
     public Result<String> userSave(@PathVariable("roleId") Long roleId, @RequestBody List<Long> userIdList) {
         Assert.isTrue(CollUtil.isNotEmpty(userIdList), "UserId is empty!");
         //查询数据库该角色对应的用户列表

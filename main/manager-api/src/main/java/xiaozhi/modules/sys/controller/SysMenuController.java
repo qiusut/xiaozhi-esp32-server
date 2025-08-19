@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.user.UserDetail;
@@ -30,6 +31,7 @@ public class SysMenuController {
 
     @GetMapping("nav")
     @Operation(summary = "菜单导航")
+    @RequiresPermissions("admin:menu:nav")
     public Result<List<SysMenuVO>> nav() {
         UserDetail user = SecurityUser.getUser();
         List<SysMenuVO> list = sysMenuService.getUserMenuList(user, MenuTypeEnum.MENU.getValue());
@@ -75,7 +77,7 @@ public class SysMenuController {
     @PostMapping
     @Operation(summary = "保存")
     @LogOperation("菜单保存")
-    //@RequiresPermissions("sys:menu:save")
+    @RequiresPermissions("admin:menu:save")
     public Result<String> save(@RequestBody @Valid SysMenuDTO dto) {
         sysMenuService.save(dto);
         return Result.okResult(null);
@@ -84,7 +86,7 @@ public class SysMenuController {
     @PutMapping
     @Operation(summary = "修改")
     @LogOperation("菜单修改")
-    //@RequiresPermissions("hasAuthority('sys:menu:update')")
+    @RequiresPermissions("admin:menu:update")
     public Result<Void> update(@RequestBody @Valid SysMenuVO vo) {
         sysMenuService.update(vo);
         return Result.okResult(null);
@@ -93,7 +95,7 @@ public class SysMenuController {
     @DeleteMapping("{id}")
     @Operation(summary = "删除")
     @LogOperation("菜单删除")
-    //@RequiresPermissions("sys:menu:delete")
+    @RequiresPermissions("admin:menu:delete")
     public Result<String> delete(@PathVariable("id") Long id) {
         // 判断是否有子菜单或按钮
         Long count = sysMenuService.getSubMenuCount(id);

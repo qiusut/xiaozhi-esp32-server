@@ -41,7 +41,7 @@ public class TimbreController {
 
     @GetMapping
     @Operation(summary = "分页查找")
-    @RequiresPermissions("sys:role:superAdmin")
+    //@RequiresPermissions("sys:role:superAdmin")
     @Parameters({
             @Parameter(name = "ttsModelId", description = "对应 TTS 模型主键", required = true),
             @Parameter(name = "name", description = "音色名称"),
@@ -63,7 +63,7 @@ public class TimbreController {
 
     @PostMapping
     @Operation(summary = "音色保存")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("ttsVoice:save")
     public Result<Void> save(@RequestBody TimbreDataDTO dto) {
         ValidatorUtils.validateEntity(dto);
         timbreService.save(dto);
@@ -72,7 +72,7 @@ public class TimbreController {
 
     @PutMapping("/{id}")
     @Operation(summary = "音色修改")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("ttsVoice:update")
     public Result<Void> update(
             @PathVariable String id,
             @RequestBody TimbreDataDTO dto) {
@@ -83,7 +83,7 @@ public class TimbreController {
 
     @PostMapping("/delete")
     @Operation(summary = "音色删除")
-    @RequiresPermissions("sys:role:superAdmin")
+    @RequiresPermissions("ttsVoice:delete")
     public Result<Void> delete(@RequestBody String[] ids) {
         timbreService.delete(ids);
         return new Result<>();

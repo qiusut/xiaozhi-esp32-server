@@ -1,31 +1,20 @@
 package xiaozhi.modules.iot.controller;
 
-import cn.hutool.core.collection.CollectionUtil;
-import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import org.apache.shiro.authz.annotation.RequiresPermissions;
 import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
-import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
-import xiaozhi.modules.agent.dao.AgentDao;
-import xiaozhi.modules.agent.entity.AgentEntity;
-import xiaozhi.modules.device.dao.DeviceDao;
-import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.iot.dto.CommandDTO;
 import xiaozhi.modules.iot.service.IotWsService;
-import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.tb.service.TbDeviceService;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * iot,websocket管理
@@ -48,6 +37,7 @@ public class IotWsController {
 
     @GetMapping("/getOnMac")
     @Operation(summary = "获取当前所有正在连接列表（返回的mac就是在线的mac）")
+    @RequiresPermissions("sys:role:superAdmin")
     public Result<JSONObject> getOnMac() {
         String result = iotWsService.getWs(null);
         JSONObject jsonObject = JSONUtil.parseObj(result);
