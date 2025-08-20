@@ -55,7 +55,7 @@ public class SysUserPlusServiceImpl extends ServiceImpl<SysUserDao, SysUserEntit
                         ));
 
             }
-            List<TbDeviceEntity> tbDeviceEntityList = tbDeviceDao.selectList(Wrappers.lambdaQuery(TbDeviceEntity.class).in(TbDeviceEntity::getCreator, userIds));
+            List<TbDeviceEntity> tbDeviceEntityList = tbDeviceDao.selectList(Wrappers.lambdaQuery(TbDeviceEntity.class).in(TbDeviceEntity::getUserId, userIds));
             if(CollUtil.isNotEmpty(tbDeviceEntityList)){
                 tbDeviceCountMap = deviceEntityList.stream()
                         .collect(Collectors.toMap(

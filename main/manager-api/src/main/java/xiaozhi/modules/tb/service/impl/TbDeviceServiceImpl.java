@@ -106,7 +106,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
         List<JSONObject> resultJson = new ArrayList<>();
         List<TbDeviceEntity> list = this.list(Wrappers.lambdaQuery(TbDeviceEntity.class)
                         .eq(TbDeviceEntity::getStatus, 1)
-                        .eq(TbDeviceEntity::getCreator,SecurityUser.getUserId())
+                        .eq(TbDeviceEntity::getUserId,SecurityUser.getUserId())
                 );
         if(CollectionUtil.isNotEmpty(list)){
             for(TbDeviceEntity tbDeviceEntity:list){
@@ -135,7 +135,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
         if(user.getSuperAdmin().equals(SuperAdminEnum.YES.value())){
             queryWrapper.eq(StrUtil.isNotBlank(deviceQueryPage.getUsername()), TbDeviceEntity::getUsername, user.getUsername());
         }else {
-            queryWrapper.eq(TbDeviceEntity::getCreator, user.getId());
+            queryWrapper.eq(TbDeviceEntity::getUserId, user.getId());
         }
 
         return this.page(page, queryWrapper);
@@ -154,7 +154,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
         UserDetail user = SecurityUser.getUser();
 
         String name = tbDeviceDTO.getName();
-        boolean isNameExist = this.exists(Wrappers.lambdaQuery(TbDeviceEntity.class).eq(TbDeviceEntity::getName, name).eq(TbDeviceEntity::getCreator, user.getId()));
+        boolean isNameExist = this.exists(Wrappers.lambdaQuery(TbDeviceEntity.class).eq(TbDeviceEntity::getName, name).eq(TbDeviceEntity::getUserId, user.getId()));
         Assert.isFalse(isNameExist, "该名称已在你的设备列表存在请重新命名");
 
         TbDeviceEntity tbDeviceEntity = new TbDeviceEntity();
@@ -241,7 +241,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
         //String funKeyPrefix = "tb:device_fun:";
         List<TbDeviceEntity> list = this.list(Wrappers.lambdaQuery(TbDeviceEntity.class)
                 .eq(TbDeviceEntity::getStatus, 1)
-                .eq(userId!=null,TbDeviceEntity::getCreator, userId)
+                .eq(userId!=null,TbDeviceEntity::getUserId, userId)
                 .orderByAsc(TbDeviceEntity::getCreateDate)
         );
         if(userId==null){
@@ -255,7 +255,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
             if(CollectionUtil.isNotEmpty(tbDeviceIds)){
                 JSONArray tbDeviceJson = getTbDeviceJson(tbDeviceIds);
                 Map<String, JSONObject> tbDeviceMap = tbDeviceJson.stream().map(JSONObject::new).collect(Collectors.toMap(tbDeviceJsonObject -> tbDeviceJsonObject.getJSONObject("id").getStr("id"), tbDeviceJsonObject -> tbDeviceJsonObject));
-                Map<Long,List<TbDeviceEntity>> userMap = list.stream().collect(Collectors.groupingBy(TbDeviceEntity::getCreator));
+                Map<Long,List<TbDeviceEntity>> userMap = list.stream().collect(Collectors.groupingBy(TbDeviceEntity::getUserId));
                 for (Map.Entry<Long, List<TbDeviceEntity>> entry : userMap.entrySet()) {
                     JSONObject jsonObject_nameInfo = new JSONObject();
                     JSONObject jsonObject_funCall = new JSONObject();

@@ -17,6 +17,9 @@ public class TbDeviceEntity {
     @Schema(description = "ID")
     private String id;
 
+    @Schema(description = "关联用户ID")
+    private Long userId;
+
     @Schema(description = "名称,以这个名称匹配")
     private String name;
 

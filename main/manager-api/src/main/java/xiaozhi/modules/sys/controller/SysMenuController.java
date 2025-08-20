@@ -31,7 +31,7 @@ public class SysMenuController {
 
     @GetMapping("nav")
     @Operation(summary = "菜单导航")
-    @RequiresPermissions("admin:menu:nav")
+    //@RequiresPermissions("admin:menu:nav")
     public Result<List<SysMenuVO>> nav() {
         UserDetail user = SecurityUser.getUser();
         List<SysMenuVO> list = sysMenuService.getUserMenuList(user, MenuTypeEnum.MENU.getValue());

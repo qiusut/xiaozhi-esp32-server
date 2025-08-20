@@ -9,6 +9,8 @@ import java.util.Map;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,13 +34,17 @@ import xiaozhi.modules.security.password.PasswordUtils;
 import xiaozhi.modules.security.service.CaptchaService;
 import xiaozhi.modules.security.service.SysUserTokenService;
 import xiaozhi.modules.security.user.SecurityUser;
+import xiaozhi.modules.sys.dto.AppUserDTO;
 import xiaozhi.modules.sys.dto.PasswordDTO;
 import xiaozhi.modules.sys.dto.RetrievePasswordDTO;
 import xiaozhi.modules.sys.dto.SysUserDTO;
+import xiaozhi.modules.sys.entity.SysUserEntity;
 import xiaozhi.modules.sys.service.SysDictDataService;
 import xiaozhi.modules.sys.service.SysParamsService;
+import xiaozhi.modules.sys.service.SysUserPlusService;
 import xiaozhi.modules.sys.service.SysUserService;
 import xiaozhi.modules.sys.vo.SysDictDataItem;
+import xiaozhi.modules.sys.vo.SysUserVO;
 
 /**
  * 登录控制层
@@ -53,6 +59,7 @@ public class LoginController {
     private final CaptchaService captchaService;
     private final SysParamsService sysParamsService;
     private final SysDictDataService sysDictDataService;
+    private final SysUserPlusService sysUserPlusService;
 
     @GetMapping("/captcha")
     @Operation(summary = "验证码")
@@ -84,7 +91,7 @@ public class LoginController {
     @PostMapping("/login")
     @Operation(summary = "登录")
     public Result<TokenDTO> login(@RequestBody LoginDTO login) {
-        Assert.isTrue(StrUtil.isNotBlank(login.getUsername()), "用户名不能为空");
+        Assert.isTrue(StrUtil.isNotBlank(login.getUsername())||StrUtil.isNotBlank(login.getMobile()), "用户名或手机号不能为空");
         // 验证是否正确输入验证码
         boolean validate = captchaService.validate(login.getCaptchaId(), login.getCaptcha(), true);
         if (!validate) {
@@ -92,19 +99,25 @@ public class LoginController {
         }
 
         // 按照用户名获取用户
-        SysUserDTO userDTO = sysUserService.getByUsername(login.getUsername());
+        //SysUserDTO userDTO = sysUserService.getByUsername(login.getUsername());
+
+        SysUserEntity user = sysUserPlusService.getOne(Wrappers.lambdaQuery(SysUserEntity.class)
+                .eq(StrUtil.isNotBlank(login.getMobile()),SysUserEntity::getMobile, login.getMobile())
+                .eq(StrUtil.isNotBlank(login.getUsername()),SysUserEntity::getUsername, login.getUsername())
+        );
+
         // 判断用户是否存在
-        if (userDTO == null) {
+        if (user == null) {
             throw new RenException("请检测用户和密码是否输入错误");
         }
         // 判断密码是否正确，不一样则进入if
-        if (!PasswordUtils.matches(login.getPassword(), userDTO.getPassword())) {
+        if (!PasswordUtils.matches(login.getPassword(), user.getPassword())) {
             throw new RenException("请检测用户和密码是否输入错误");
         }
 
         TokenDTO tokenDTO = new TokenDTO();
-        tokenDTO.setToken(JwtUtil.createToken(userDTO.getId(),userDTO.getUsername()));
-        tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(userDTO.getId()));
+        tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername()));
+        tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(user.getId()));
         tokenDTO.setClientHash(HttpContextUtils.getClientCode());
         tokenDTO.setExpire(3600);
 
@@ -118,7 +131,7 @@ public class LoginController {
         System.out.println("请求刷新token接口refreshToken:" + refreshToken);
         Long userId = JwtUtil.getUserIdFromRefreshToken(refreshToken);
 
-        SysUserDTO user = sysUserService.getByUserId(userId);
+        SysUserEntity user = sysUserPlusService.getOne(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getId, userId));
         Assert.notNull(user, "token异常，非法登入");
 
         JSONObject result = new JSONObject();
@@ -140,12 +153,12 @@ public class LoginController {
         boolean validate;
         if (isMobileRegister) {
             // 验证用户是否是手机号码
-            boolean validPhone = ValidatorUtils.isValidPhone(login.getUsername());
+            boolean validPhone = ValidatorUtils.isValidPhone(login.getMobile());
             if (!validPhone) {
-                throw new RenException("用户名不是手机号码，请重新输入");
+                throw new RenException("手机号码格式不正确，请重新输入");
             }
             // 验证短信验证码是否正常
-            validate = captchaService.validateSMSValidateCode(login.getUsername(), login.getMobileCaptcha(), false);
+            validate = captchaService.validateSMSValidateCode(login.getMobile(), login.getMobileCaptcha(), false);
             if (!validate) {
                 throw new RenException("手机验证码错误，请重新获取");
             }
@@ -158,12 +171,11 @@ public class LoginController {
         }
 
         // 按照用户名获取用户
-        SysUserDTO userDTO = sysUserService.getByUsername(login.getUsername());
-        if (userDTO != null) {
-            throw new RenException("此手机号码已经注册过");
-        }
-        userDTO = new SysUserDTO();
+        Assert.isFalse(sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getUsername, login.getUsername())), "此用户名已经注册过");
+        Assert.isFalse(sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getMobile, login.getMobile())), "此手机号码已被注册");
+        SysUserDTO userDTO = new SysUserDTO();
         userDTO.setUsername(login.getUsername());
+        userDTO.setMobile(login.getMobile());
         userDTO.setPassword(login.getPassword());
         sysUserService.save(userDTO);
         return new Result<>();
@@ -238,5 +250,29 @@ public class LoginController {
         config.put("menuSeasoningType", sysParamsService.getValue("system.menu_seasoning_type",true));
 
         return new Result<Map<String, Object>>().ok(config);
+    }
+
+    @PutMapping("/updateLocal")
+    @Operation(summary = "修改信息")
+    public Result<Void> updateLocal(@RequestBody AppUserDTO dto) {
+        UserDetail user = SecurityUser.getUser();
+        LambdaUpdateWrapper<SysUserEntity> updateWrapper = Wrappers.lambdaUpdate(SysUserEntity.class);
+        updateWrapper.eq(SysUserEntity::getId, user.getId());
+        if(StrUtil.isNotBlank(dto.getUsername())&&!dto.getUsername().equals(user.getUsername())){
+            Assert.isTrue(sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getUsername, dto.getUsername()).ne(SysUserEntity::getId, user.getId())), "此用户名已经注册过");
+            updateWrapper.set(SysUserEntity::getUsername, dto.getUsername());
+        }
+        if(StrUtil.isNotBlank(dto.getRealName())&&!dto.getRealName().equals(user.getRealName())){
+            updateWrapper.set(SysUserEntity::getRealName, dto.getRealName());
+        }
+        if(StrUtil.isNotBlank(dto.getHeadUrl())&&!dto.getHeadUrl().equals(user.getHeadUrl())){
+            updateWrapper.set(SysUserEntity::getHeadUrl, dto.getHeadUrl());
+        }
+        if(dto.getGender()!=null&&!dto.getGender().equals(user.getGender())){
+            updateWrapper.set(SysUserEntity::getGender, dto.getGender());
+        }
+        sysUserPlusService.update(updateWrapper);
+
+        return new Result<>();
     }
 }
