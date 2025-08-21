@@ -97,6 +97,15 @@ public class SwaggerConfig {
     }
 
     @Bean
+    public GroupedOpenApi bindApi() {
+        return GroupedOpenApi.builder()
+                .group("bind")
+                .pathsToMatch("/bind/**")
+                .displayName("bind设备")
+                .build();
+    }
+
+    @Bean
     public GroupedOpenApi userApi() {
         return GroupedOpenApi.builder()
                 .group("user")
@@ -111,6 +120,15 @@ public class SwaggerConfig {
                 .group("config")
                 .pathsToMatch("/config/**")
                 .displayName("参数")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi fileApi() {
+        return GroupedOpenApi.builder()
+                .group("file")
+                .pathsToMatch("/file/**")
+                .displayName("文件")
                 .build();
     }
 

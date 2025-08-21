@@ -26,6 +26,7 @@ import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.HttpContextUtils;
 import xiaozhi.common.utils.JwtUtil;
 import xiaozhi.common.utils.Result;
+import xiaozhi.common.utils.ResultUtils;
 import xiaozhi.common.validator.AssertUtils;
 import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.modules.security.dto.LoginDTO;
@@ -127,18 +128,14 @@ public class LoginController {
     @PostMapping("/refreshToken")
     @Operation(summary = "刷新token")
     @RateLimit(key_pre = "sys:refreshToken")
-    public Result<JSONObject> refreshToken(@RequestHeader("refreshToken") String refreshToken) {
+    public Result<Map<String, String>> refreshToken(@RequestHeader("refreshToken") String refreshToken) {
         System.out.println("请求刷新token接口refreshToken:" + refreshToken);
         Long userId = JwtUtil.getUserIdFromRefreshToken(refreshToken);
 
         SysUserEntity user = sysUserPlusService.getOne(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getId, userId));
         Assert.notNull(user, "token异常，非法登入");
 
-        JSONObject result = new JSONObject();
-        result.set("accessToken", JwtUtil.createToken(user.getId(),user.getUsername()));
-        result.set("refreshToken", JwtUtil.createRefreshToken(user.getId()));
-
-        return new Result<JSONObject>().ok(result);
+        return ResultUtils.success(JwtUtil.generateTokens(user.getId(),user.getUsername()));
     }
 
     @PostMapping("/register")
@@ -259,7 +256,7 @@ public class LoginController {
         LambdaUpdateWrapper<SysUserEntity> updateWrapper = Wrappers.lambdaUpdate(SysUserEntity.class);
         updateWrapper.eq(SysUserEntity::getId, user.getId());
         if(StrUtil.isNotBlank(dto.getUsername())&&!dto.getUsername().equals(user.getUsername())){
-            Assert.isTrue(sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getUsername, dto.getUsername()).ne(SysUserEntity::getId, user.getId())), "此用户名已经注册过");
+            Assert.isFalse(sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getUsername, dto.getUsername()).ne(SysUserEntity::getId, user.getId())), "此用户名已经注册过");
             updateWrapper.set(SysUserEntity::getUsername, dto.getUsername());
         }
         if(StrUtil.isNotBlank(dto.getRealName())&&!dto.getRealName().equals(user.getRealName())){

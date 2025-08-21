@@ -25,13 +25,13 @@ import java.util.List;
 @AllArgsConstructor
 public class IotWsController {
     private final IotWsService iotWsService;
-    private final TbDeviceService tbDeviceService;
+    //private final TbDeviceService tbDeviceService;
 
     @GetMapping("/deviceList")
     @Operation(summary = "获取当前用户的所有设备")
     public Result<List<JSONObject>> deviceList(@RequestParam(required = false) String agentId) {
         List<JSONObject> jsonObjectList = iotWsService.deviceList(agentId);
-        jsonObjectList.addAll(tbDeviceService.getTbDeviceList());
+        //jsonObjectList.addAll(tbDeviceService.getTbDeviceList());
         return new Result<List<JSONObject>>().ok(jsonObjectList);
     }
 

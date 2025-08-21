@@ -18,6 +18,7 @@ import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
+import xiaozhi.common.utils.ResultUtils;
 import xiaozhi.common.validator.ValidatorUtils;
 import xiaozhi.modules.device.service.DeviceService;
 import xiaozhi.modules.security.user.SecurityUser;
@@ -53,7 +54,7 @@ public class SysUserController {
     @RequiresPermissions("admin:user:list")
     public Result<PageData<SysUserVO>> page(@ParameterObject @Valid SysUserQuery query) {
         PageData<SysUserVO> page = sysUserPlusService.page(query);
-        return Result.okResult(page);
+        return ResultUtils.success(page);
     }
 
     @GetMapping("/getUserView")
@@ -82,7 +83,7 @@ public class SysUserController {
         // 查询角色对应的菜单
         vo.setRoleIdList(roleIdList);
 
-        return Result.okResult(vo);
+        return ResultUtils.success(vo);
     }
 
     @PostMapping("role/{userId}")
@@ -96,7 +97,7 @@ public class SysUserController {
 
         sysUserRoleService.saveOrUpdate(userId, roleList);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
 }

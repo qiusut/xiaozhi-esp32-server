@@ -278,9 +278,13 @@ public class RecInfoServiceImpl extends ServiceImpl<RecInfoDao, RecInfoEntity> i
         }
         RecInfoEntity dto = this.getById(id);
         Assert.notNull(dto,"菜谱不存在");
-        //Object info = redisUtils.getRedisTemplate().opsForHash().get("recipe:nameMap",dto.getName());
-        String recipeJson = redisUtils.rawHashGet("recipe:nameMap", dto.getName());
-        Assert.isTrue(StrUtil.isNotBlank(recipeJson),"菜谱不存在");
+        String recipeJson = "";
+        if(dto.getScope().equals(0)){
+            recipeJson = redisUtils.rawHashGet("recipe:nameMap", dto.getName());
+        }else {
+            Long userId = SecurityUser.getUserId();
+            recipeJson = redisUtils.rawHashGet("recipe:user:"+userId+":nameMap", dto.getName());
+        }
         Assert.notNull(recipeJson,"菜谱不存在");
         Map<String, String> headers = new HashMap<>();
         if(StrUtil.isNotBlank(device_mac)){

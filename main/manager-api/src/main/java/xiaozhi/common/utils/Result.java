@@ -36,12 +36,6 @@ public class Result<T> implements Serializable {
         return this;
     }
 
-    public static <T> Result<T> okResult(T data) {
-        Result<T> result = new Result<>();
-        result.setData(data);
-        return result;
-    }
-
     public Result<T> error() {
         this.code = ErrorCode.INTERNAL_SERVER_ERROR;
         this.msg = MessageUtils.getMessage(this.code);
@@ -64,13 +58,6 @@ public class Result<T> implements Serializable {
         this.code = ErrorCode.INTERNAL_SERVER_ERROR;
         this.msg = msg;
         return this;
-    }
-
-    public static <T> Result<T> errorResult(T data) {
-        Result<T> result = new Result<>();
-        result.code = ErrorCode.INTERNAL_SERVER_ERROR;
-        result.msg = data.toString();
-        return result;
     }
 
 }

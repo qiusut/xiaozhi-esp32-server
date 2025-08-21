@@ -16,6 +16,7 @@ import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.page.PageData;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
+import xiaozhi.common.utils.ResultUtils;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.sys.entity.SysRoleEntity;
 import xiaozhi.modules.sys.query.SysRoleQuery;
@@ -44,7 +45,7 @@ public class SysRoleController {
     @RequiresPermissions("admin:role:list")
     public Result<PageData<SysRoleVO>> page(@ParameterObject @Valid SysRoleQuery query) {
         Page<SysRoleEntity> page = sysRoleService.page(query);
-        return Result.okResult(PageData.ok(BeanUtil.copyToList(page.getRecords(), SysRoleVO.class),page.getTotal()));
+        return ResultUtils.success(PageData.ok(BeanUtil.copyToList(page.getRecords(), SysRoleVO.class),page.getTotal()));
     }
 
     @GetMapping("list")
@@ -53,7 +54,7 @@ public class SysRoleController {
     public Result<List<SysRoleVO>> list() {
         List<SysRoleVO> list = sysRoleService.getList(new SysRoleQuery());
 
-        return Result.okResult(list);
+        return ResultUtils.success(list);
     }
 
     @GetMapping("{id}")
@@ -69,7 +70,7 @@ public class SysRoleController {
         List<Long> menuIdList = sysRoleMenuService.getMenuIdList(id);
         role.setMenuIdList(menuIdList);
 
-        return Result.okResult(role);
+        return ResultUtils.success(role);
     }
 
     @PostMapping
@@ -79,7 +80,7 @@ public class SysRoleController {
     public Result<String> save(@RequestBody @Valid SysRoleVO vo) {
         sysRoleService.save(vo);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     @PutMapping
@@ -89,7 +90,7 @@ public class SysRoleController {
     public Result<String> update(@RequestBody @Valid SysRoleVO vo) {
         sysRoleService.update(vo);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     /*@PutMapping("data-scope")
@@ -99,7 +100,7 @@ public class SysRoleController {
     public Result<String> dataScope(@RequestBody @Valid SysRoleDataScopeVO vo) {
         sysRoleService.dataScope(vo);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }*/
 
     @PostMapping("/delete")
@@ -111,7 +112,7 @@ public class SysRoleController {
             sysRoleService.delete(CollUtil.toList(idList));
         }
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     @GetMapping("menu")
@@ -121,7 +122,7 @@ public class SysRoleController {
         UserDetail user = SecurityUser.getUser();
         List<SysMenuVO> list = sysMenuService.getUserMenuList(user, null);
 
-        return Result.okResult(list);
+        return ResultUtils.success(list);
     }
 
     /*@GetMapping("user/page")
@@ -130,7 +131,7 @@ public class SysRoleController {
     public Result<PageResult<SysUserVO>> userPage(@Valid SysRoleUserQuery query) {
         PageResult<SysUserVO> page = sysUserService.roleUserPage(query);
 
-        return Result.okResult(page);
+        return ResultUtils.success(page);
     }*/
 
     @DeleteMapping("user/{roleId}")
@@ -140,7 +141,7 @@ public class SysRoleController {
     public Result<String> userDelete(@PathVariable("roleId") Long roleId, @RequestBody List<Long> userIdList) {
         sysUserRoleService.deleteByUserIdList(roleId, userIdList);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     @PostMapping("user/{roleId}")
@@ -159,7 +160,7 @@ public class SysRoleController {
         Assert.isTrue(CollUtil.isNotEmpty(addUserIdList), "UserId existed!");
         sysUserRoleService.saveUserList(roleId, addUserIdList);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     @PostMapping("nameList")
@@ -167,6 +168,6 @@ public class SysRoleController {
     public Result<List<String>> nameList(@RequestBody List<Long> idList) {
         List<String> list = sysRoleService.getNameList(idList);
 
-        return Result.okResult(list);
+        return ResultUtils.success(list);
     }
 }

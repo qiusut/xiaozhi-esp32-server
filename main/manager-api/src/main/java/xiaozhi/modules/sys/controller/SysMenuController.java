@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import xiaozhi.common.annotation.LogOperation;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
+import xiaozhi.common.utils.ResultUtils;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.sys.dto.SysMenuDTO;
 import xiaozhi.modules.sys.entity.SysMenuEntity;
@@ -36,7 +37,7 @@ public class SysMenuController {
         UserDetail user = SecurityUser.getUser();
         List<SysMenuVO> list = sysMenuService.getUserMenuList(user, MenuTypeEnum.MENU.getValue());
 
-        return Result.okResult(list);
+        return ResultUtils.success(list);
     }
 
     @GetMapping("authority")
@@ -45,7 +46,7 @@ public class SysMenuController {
         UserDetail user = SecurityUser.getUser();
         Set<String> set = sysMenuService.getUserAuthority(user);
 
-        return Result.okResult(set);
+        return ResultUtils.success(set);
     }
 
     @GetMapping("list")
@@ -55,7 +56,7 @@ public class SysMenuController {
     public Result<List<SysMenuVO>> list(Integer type) {
         List<SysMenuVO> list = sysMenuService.getMenuList(type);
 
-        return Result.okResult(list);
+        return ResultUtils.success(list);
     }
 
     @GetMapping("{id}")
@@ -71,7 +72,7 @@ public class SysMenuController {
             vo.setParentName(parentEntity.getName());
         }
 
-        return Result.okResult(vo);
+        return ResultUtils.success(vo);
     }
 
     @PostMapping
@@ -80,7 +81,7 @@ public class SysMenuController {
     @RequiresPermissions("admin:menu:save")
     public Result<String> save(@RequestBody @Valid SysMenuDTO dto) {
         sysMenuService.save(dto);
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     @PutMapping
@@ -89,7 +90,7 @@ public class SysMenuController {
     @RequiresPermissions("admin:menu:update")
     public Result<Void> update(@RequestBody @Valid SysMenuVO vo) {
         sysMenuService.update(vo);
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 
     @DeleteMapping("{id}")
@@ -103,6 +104,6 @@ public class SysMenuController {
 
         sysMenuService.delete(id);
 
-        return Result.okResult(null);
+        return ResultUtils.success(null);
     }
 }
