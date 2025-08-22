@@ -3,9 +3,12 @@ package xiaozhi.common.user;
 import java.io.Serializable;
 import java.util.Set;
 
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.extra.spring.SpringUtil;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.hibernate.validator.constraints.Range;
+import xiaozhi.modules.sys.service.SysParamsService;
 
 /**
  * 登录用户信息
@@ -25,6 +28,16 @@ public class UserDetail implements Serializable {
 
     @Schema(description = "头像")
     private String headUrl;
+
+    public String getHeadUrl(){
+        if(StrUtil.isNotBlank(headUrl)){
+            if(!headUrl.startsWith("http")){
+                SysParamsService sysParamsService = SpringUtil.getBean(SysParamsService.class);
+                return sysParamsService.getValue("file.url", true)+headUrl;
+            }
+        }
+        return headUrl;
+    }
 
     @Schema(description = "性别 0：男   1：女   2：未知")
     private Integer gender;

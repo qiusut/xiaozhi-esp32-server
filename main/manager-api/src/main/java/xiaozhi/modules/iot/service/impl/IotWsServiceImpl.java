@@ -1,11 +1,13 @@
 package xiaozhi.modules.iot.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.http.Method;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Service;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.modules.agent.dao.AgentDao;
 import xiaozhi.modules.agent.entity.AgentEntity;
+import xiaozhi.modules.bind.model.entity.DeviceShareEntity;
+import xiaozhi.modules.bind.service.DeviceShareService;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.iot.dto.CommandDTO;
@@ -31,6 +35,9 @@ public class IotWsServiceImpl implements IotWsService {
 
     @Resource
     private SysParamsService sysParamsService;
+
+    @Resource
+    private DeviceShareService deviceShareService;
 
     @Resource
     private AgentDao agentDao;
@@ -64,11 +71,22 @@ public class IotWsServiceImpl implements IotWsService {
         );
         if (CollectionUtil.isNotEmpty(agents)) {
             Map<String, String> nameMap = agents.stream().collect(Collectors.toMap(AgentEntity::getId, AgentEntity::getAgentName));
-            List<DeviceEntity> agentList = deviceDao.selectList(Wrappers.lambdaQuery(DeviceEntity.class)
-                    .eq(DeviceEntity::getUserId, user.getId())
-                    .in(DeviceEntity::getAgentId, nameMap.keySet())
-                    .orderByAsc(DeviceEntity::getAgentId, DeviceEntity::getSort)
+
+            List<DeviceShareEntity> deviceShareList = deviceShareService.list(Wrappers.lambdaQuery(DeviceShareEntity.class)
+                    .eq(DeviceShareEntity::getUserId, user.getId())
             );
+            List<String> deviceIds = new ArrayList<>();
+            if(CollUtil.isNotEmpty(deviceShareList)){
+                deviceIds = deviceShareList.stream().map(DeviceShareEntity::getDeviceId).toList();
+            }
+
+            LambdaQueryWrapper<DeviceEntity> queryWrapper = Wrappers.lambdaQuery();
+            List<String> finalDeviceIds = deviceIds;
+            queryWrapper.or(i -> i.and(j -> j.eq(DeviceEntity::getUserId, user.getId()).in(DeviceEntity::getAgentId, nameMap.keySet()))
+                    .in(DeviceEntity::getId, finalDeviceIds)
+            );
+            queryWrapper.orderByAsc(DeviceEntity::getAgentId, DeviceEntity::getSort);
+            List<DeviceEntity> agentList = deviceDao.selectList(queryWrapper);
 
             if (CollectionUtil.isNotEmpty(agentList)) {
                 String result = this.getWs(null);
@@ -78,17 +96,18 @@ public class IotWsServiceImpl implements IotWsService {
                     jsonObject = JSONUtil.parseObj(e);
                     jsonObject.set("agentName", nameMap.get(e.getAgentId()));
                     jsonObject.set("isActive", result_json.containsKey(e.getMacAddress()) ? 1 : 0);
+                    jsonObject.set("isShare", finalDeviceIds.contains(e.getId()));
                     jsonObject.set("iot", result_json.get(e.getMacAddress()));
                     jsonObjectList.add(jsonObject);
                 });
             }
-
         }
         return jsonObjectList;
     }
 
     @Override
     public String getWs(String device_mac){
+        String result = JSONUtil.toJsonStr(new JSONObject());
         String http_url = sysParamsService.getValue("server.http_url", true);
         String http_url_ws = sysParamsService.getValue("server.http_url_ws", true);
         if(StrUtil.equals("dev", profiles_active)){
@@ -98,7 +117,12 @@ public class IotWsServiceImpl implements IotWsService {
         if(StrUtil.isNotBlank(device_mac)){
             headers.put("device_mac", device_mac);
         }
-        return HttpUtil.get(http_url + http_url_ws,headers);
+        try {
+            result = HttpUtil.get(http_url + http_url_ws,headers);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     @Override

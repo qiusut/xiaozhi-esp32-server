@@ -41,6 +41,9 @@ public class RecInfoVO {
     @Schema(description = "所属范围，0：公共，1：个人")
     private Integer scope;
 
+    @Schema(description = "轮播图")
+    private String carouselPic;
+
     @Schema(description = "状态，0禁用，1正常")
     private Integer status;
 

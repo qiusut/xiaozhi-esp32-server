@@ -39,6 +39,9 @@ public class RecInfoEntity {
     @Schema(description = "菜谱详情")
     private String detail;
 
+    @Schema(description = "轮播图")
+    private String carouselPic;
+
     @Schema(description = "状态，0禁用，1正常")
     private Integer status;
 

@@ -245,6 +245,8 @@ public class LoginController {
         config.put("beianGaNum", sysParamsService.getValue(Constant.SysBaseParam.BEIAN_GA_NUM.getValue(), true));
         config.put("name", sysParamsService.getValue(Constant.SysBaseParam.SERVER_NAME.getValue(), true));
         config.put("menuSeasoningType", sysParamsService.getValue("system.menu_seasoning_type",true));
+        config.put("fileUrl", sysParamsService.getValue("file.url",true));
+        config.put("recipePicUrl", sysParamsService.getValue("recipe.pic.url",true));
 
         return new Result<Map<String, Object>>().ok(config);
     }

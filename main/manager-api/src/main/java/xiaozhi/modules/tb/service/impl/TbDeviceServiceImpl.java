@@ -1,6 +1,7 @@
 package xiaozhi.modules.tb.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
@@ -20,6 +21,9 @@ import org.springframework.stereotype.Service;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.ApiUtils;
+import xiaozhi.modules.bind.model.entity.DeviceShareEntity;
+import xiaozhi.modules.bind.service.DeviceShareService;
+import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.security.user.SecurityUser;
 import xiaozhi.modules.sys.enums.SuperAdminEnum;
 import xiaozhi.modules.sys.service.SysParamsService;
@@ -50,6 +54,9 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
     @Resource
     @Lazy
     private TbFunctionService tbFunctionService;
+
+    @Resource
+    private DeviceShareService deviceShareService;
 
     private final String getLogin = "/api/auth/login";
     private final String getTenantDeviceInfos = "/api/tenant/deviceInfos";
@@ -103,11 +110,28 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
 
     @Override
     public List<JSONObject> getTbDeviceList(){
+        Long userId = SecurityUser.getUserId();
         List<JSONObject> resultJson = new ArrayList<>();
-        List<TbDeviceEntity> list = this.list(Wrappers.lambdaQuery(TbDeviceEntity.class)
-                        .eq(TbDeviceEntity::getStatus, 1)
-                        .eq(TbDeviceEntity::getUserId,SecurityUser.getUserId())
-                );
+
+        List<DeviceShareEntity> deviceShareList = deviceShareService.list(Wrappers.lambdaQuery(DeviceShareEntity.class)
+                .eq(DeviceShareEntity::getUserId, userId)
+        );
+        List<String> deviceIds = new ArrayList<>();
+        if(CollUtil.isNotEmpty(deviceShareList)){
+            deviceIds = deviceShareList.stream().map(DeviceShareEntity::getDeviceId).toList();
+        }
+
+        LambdaQueryWrapper<TbDeviceEntity> queryWrapper = Wrappers.lambdaQuery();
+        List<String> finalDeviceIds = deviceIds;
+        queryWrapper.or(i -> {
+                    i.in(TbDeviceEntity::getId, finalDeviceIds);
+                    i.eq(TbDeviceEntity::getUserId, userId);
+                }
+        );
+        queryWrapper.eq(TbDeviceEntity::getStatus, 1);
+        queryWrapper.orderByAsc(TbDeviceEntity::getCreateDate);
+
+        List<TbDeviceEntity> list = this.list(queryWrapper);
         if(CollectionUtil.isNotEmpty(list)){
             for(TbDeviceEntity tbDeviceEntity:list){
                 JSONObject tbJson = new JSONObject();
@@ -116,6 +140,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
                 tbJson.set("name", tbDeviceEntity.getName());
                 tbJson.set("type", tbDeviceEntity.getType());
                 tbJson.set("tbDeviceId", tbDeviceEntity.getTbDeviceId());
+                tbJson.set("isShare", finalDeviceIds.contains(tbDeviceEntity.getId()));
                 JSONObject tbApiJson = getTbDeviceJson(tbDeviceEntity.getTbDeviceId());
                 if(ObjectUtil.isNotNull(tbApiJson)){
                     tbJson.set("isActive", tbApiJson.getBool("active",false)?1:0);
