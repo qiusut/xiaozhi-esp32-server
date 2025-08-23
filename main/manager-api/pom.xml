@@ -33,6 +33,8 @@
         <aliyun-sms-version>4.1.0</aliyun-sms-version>
         <okio-version>3.4.0</okio-version>
         <redisson.version>3.50.0</redisson.version>
+        <x-file-storage.version>2.3.0</x-file-storage.version>
+        <minio-version>8.5.17</minio-version>
     </properties>
 
     <dependencies>
@@ -237,6 +239,16 @@
             <groupId>com.squareup.okio</groupId>
             <artifactId>okio</artifactId>
             <version>${okio-version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.dromara.x-file-storage</groupId>
+            <artifactId>x-file-storage-spring</artifactId>
+            <version>${x-file-storage.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>${minio-version}</version>
         </dependency>
     </dependencies>
 

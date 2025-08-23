@@ -3,6 +3,7 @@ package xiaozhi.common.utils;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
@@ -21,10 +22,18 @@ public class JwtUtil {
      * 获取密钥（可选，我这里做的是动态配置的，可以根据需要写死就行）
      * @return 密钥
      */
-    private static byte[] getJwtSSecret() {
+    private static byte[] getRefreshJwtSecret() {
         SysParamsService sysParamsService = SpringUtil.getBean(SysParamsService.class);
         String jwtSecret =  sysParamsService.getValue("jwt.secret", true);
         return jwtSecret.getBytes();
+    }
+
+    private static byte[] getAccessSecret(Long userId) {
+        RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
+        String redis_refreshToken = redisTemplate.opsForValue().get(TOKEN_KEY + userId);
+        Assert.isTrue(StrUtil.isNotBlank(redis_refreshToken), "Token已过期");
+        String last5Chars = redis_refreshToken.substring(redis_refreshToken.length() - 5);
+        return last5Chars.getBytes();
     }
 
     /**
@@ -40,11 +49,11 @@ public class JwtUtil {
     // 生成双Token
     public static Map<String, String> generateTokens(Long userId,String username) {
         Map<String, String> tokens = new HashMap<>();
-        // Access Token
-        tokens.put("accessToken", createToken(userId,username));
-        
         // Refresh Token
         tokens.put("refreshToken", createRefreshToken(userId));
+        // Access Token
+        tokens.put("accessToken", createToken(userId,username));
+
         return tokens;
     }
 
@@ -55,7 +64,7 @@ public class JwtUtil {
         payload.put("type", "access");
         payload.put("exp", (System.currentTimeMillis() + ACCESS_EXPIRE)/1000);
 
-        return JWTUtil.createToken(payload, getJwtSSecret());
+        return JWTUtil.createToken(payload, getAccessSecret(userId));
     }
 
     public static void main(String[] args) {
@@ -66,7 +75,7 @@ public class JwtUtil {
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
         payload.put("type", "refresh");
-        String refreshToken = JWTUtil.createToken(payload, getJwtSSecret());
+        String refreshToken = JWTUtil.createToken(payload, getRefreshJwtSecret());
         RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
         redisTemplate.opsForValue().set(TOKEN_KEY+userId, refreshToken, getRefreshExp(), TimeUnit.DAYS);
         //redisTemplate.opsForValue().set(TOKEN_KEY+userId,refreshToken, 2, TimeUnit.MINUTES);//测试使用
@@ -76,7 +85,7 @@ public class JwtUtil {
     // 刷新Token
     public static void refreshAccessToken(String refreshToken) {
 
-        Assert.isTrue(JWTUtil.verify(refreshToken, getJwtSSecret()), "非法Token错误");
+        Assert.isTrue(JWTUtil.verify(refreshToken, getRefreshJwtSecret()), "非法Token错误");
         JWT jwt = JWTUtil.parseToken(refreshToken);
         Assert.isTrue(ObjectUtil.equals("refresh", jwt.getPayload("type")), "非法Token错误");
 
@@ -102,7 +111,7 @@ public class JwtUtil {
      * @return 用户Id
      */
     public static Long getUserIdFromRefreshToken(String refreshToken) {
-        Assert.isTrue(JWTUtil.verify(refreshToken, getJwtSSecret()), "非法Token错误");
+        Assert.isTrue(JWTUtil.verify(refreshToken, getRefreshJwtSecret()), "非法Token错误");
         JWT jwt = JWTUtil.parseToken(refreshToken);
         Assert.isTrue(ObjectUtil.equals("refresh", jwt.getPayload("type")), "非法Token错误");
         Long userId = Convert.toLong(jwt.getPayload("userId"));
@@ -124,12 +133,13 @@ public class JwtUtil {
      * @return 用户Id
      */
     public static Long getUserIdFromToken(String token) {
-        byte[] key = getJwtSSecret();
+        Long userId = Convert.toLong(JWTUtil.parseToken(token).getPayload("userId"));
+        byte[] key = getAccessSecret(userId);
         Assert.isTrue(JWTUtil.verify(token, key), "非法Token错误");
         JWT jwt = JWTUtil.parseToken(token);
         Assert.isTrue(ObjectUtil.equals(jwt.getPayload("type"),"access"), "非法Token错误");
         Assert.isTrue(jwt.getPayload("exp")!=null && jwt.setKey(key).validate(0),"token已失效");
-        return Convert.toLong(jwt.getPayload("userId"));
+        return userId;
     }
 
     /**
@@ -138,7 +148,8 @@ public class JwtUtil {
      * @return 用户名
      */
     public static String getUsernameFromToken(String token) {
-        byte[] key = getJwtSSecret();
+        Long userId = Convert.toLong(JWTUtil.parseToken(token).getPayload("userId"));
+        byte[] key = getAccessSecret(userId);
         Assert.isTrue(JWTUtil.verify(token, key), "非法Token错误");
         JWT jwt = JWTUtil.parseToken(token);
         Assert.isTrue(jwt.getPayload("exp")!=null && jwt.setKey(key).validate(0),"token已失效");

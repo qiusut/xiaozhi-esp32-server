@@ -65,12 +65,18 @@ public class IotWsServiceImpl implements IotWsService {
     public List<JSONObject> deviceList(String agentId) {
         UserDetail user = SecurityUser.getUser();
         List<JSONObject> jsonObjectList = new ArrayList<>();
-        List<AgentEntity> agents = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class)
+        /*List<AgentEntity> agents = agentDao.selectList(Wrappers.lambdaQuery(AgentEntity.class)
                 .eq(StrUtil.isNotBlank(agentId), AgentEntity::getId, agentId)
                 .eq(AgentEntity::getUserId, user.getId())
-        );
+        );*/
+
+        List<JSONObject> agents = deviceShareService.getAgentList();
+
         if (CollectionUtil.isNotEmpty(agents)) {
-            Map<String, String> nameMap = agents.stream().collect(Collectors.toMap(AgentEntity::getId, AgentEntity::getAgentName));
+            Map<String, String> nameMap = agents.stream().collect(Collectors.toMap(
+                    obj -> obj.getStr("id"),
+                    obj -> obj.getStr("agentName")
+            ));
 
             List<DeviceShareEntity> deviceShareList = deviceShareService.list(Wrappers.lambdaQuery(DeviceShareEntity.class)
                     .eq(DeviceShareEntity::getUserId, user.getId())
@@ -83,15 +89,15 @@ public class IotWsServiceImpl implements IotWsService {
             LambdaQueryWrapper<DeviceEntity> queryWrapper = Wrappers.lambdaQuery();
             List<String> finalDeviceIds = deviceIds;
             queryWrapper.or(i -> i.and(j -> j.eq(DeviceEntity::getUserId, user.getId()).in(DeviceEntity::getAgentId, nameMap.keySet()))
-                    .in(DeviceEntity::getId, finalDeviceIds)
+                    .or().in(CollUtil.isNotEmpty(finalDeviceIds),DeviceEntity::getId, finalDeviceIds)
             );
             queryWrapper.orderByAsc(DeviceEntity::getAgentId, DeviceEntity::getSort);
-            List<DeviceEntity> agentList = deviceDao.selectList(queryWrapper);
+            List<DeviceEntity> deviceList = deviceDao.selectList(queryWrapper);
 
-            if (CollectionUtil.isNotEmpty(agentList)) {
+            if (CollectionUtil.isNotEmpty(deviceList)) {
                 String result = this.getWs(null);
                 JSONObject result_json = JSONUtil.parseObj(result);
-                agentList.forEach(e -> {
+                deviceList.forEach(e -> {
                     JSONObject jsonObject = new JSONObject();
                     jsonObject = JSONUtil.parseObj(e);
                     jsonObject.set("agentName", nameMap.get(e.getAgentId()));

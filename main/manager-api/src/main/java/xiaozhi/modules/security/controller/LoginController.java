@@ -117,8 +117,8 @@ public class LoginController {
         }
 
         TokenDTO tokenDTO = new TokenDTO();
-        tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername()));
         tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(user.getId()));
+        tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername()));
         tokenDTO.setClientHash(HttpContextUtils.getClientCode());
         tokenDTO.setExpire(3600);
 

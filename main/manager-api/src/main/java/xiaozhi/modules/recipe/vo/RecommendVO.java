@@ -66,14 +66,14 @@ public class RecommendVO {
 
     public String getUserName() {
         if(this.userId != null){
-            userName = SysCommonCache.getUserNameWithFallback(String.valueOf(this.userId));
+            userName = SysCommonCache.getUserValueById(this.userId,"realName");
         }
         return userName;
     }
 
     public String getAuditorName() {
         if(this.auditor != null){
-            auditorName = SysCommonCache.getUserNameWithFallback(String.valueOf(this.auditor));
+            auditorName = SysCommonCache.getUserValueById(this.auditor,"realName");
         }
         return auditorName;
     }

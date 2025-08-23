@@ -74,6 +74,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
         TbDeviceVO tbDeviceVO = BeanUtil.copyProperties(tbDeviceEntity, TbDeviceVO.class);
         tbDeviceVO.setEntityType(tbJson.getJSONObject("id").getStr("entityType"));
         tbDeviceVO.setActive(tbJson.getBool("active",false));
+        tbDeviceVO.setIsShare(!tbDeviceEntity.getUserId().equals(SecurityUser.getUserId()));
         return tbDeviceVO;
     }
 
@@ -124,8 +125,8 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
         LambdaQueryWrapper<TbDeviceEntity> queryWrapper = Wrappers.lambdaQuery();
         List<String> finalDeviceIds = deviceIds;
         queryWrapper.or(i -> {
-                    i.in(TbDeviceEntity::getId, finalDeviceIds);
-                    i.eq(TbDeviceEntity::getUserId, userId);
+                    i.in(CollUtil.isNotEmpty(finalDeviceIds),TbDeviceEntity::getId, finalDeviceIds);
+                    i.or().eq(TbDeviceEntity::getUserId, userId);
                 }
         );
         queryWrapper.eq(TbDeviceEntity::getStatus, 1);

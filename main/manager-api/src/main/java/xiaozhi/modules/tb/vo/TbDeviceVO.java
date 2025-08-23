@@ -40,6 +40,9 @@ public class TbDeviceVO {
     @Schema(description = "是否在线")
     private Boolean active;
 
+    @Schema(description = "是否共享")
+    private Boolean isShare;
+
     @Schema(description = "备注")
     private String remark;
 
