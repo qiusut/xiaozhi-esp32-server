@@ -19,6 +19,10 @@ public class JwtUtil {
     private static final String TOKEN_KEY = "sys:token:";
     private static final long ACCESS_EXPIRE = 1000 * 60 * 60; // 60分钟
 
+    @SuppressWarnings("unchecked")
+    private static final RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
+    private static final SysParamsService sysParamsService = SpringUtil.getBean(SysParamsService.class);
+
     /**
      * 获取密钥（可选，我这里做的是动态配置的，可以根据需要写死就行）
      * @return 密钥
@@ -29,7 +33,7 @@ public class JwtUtil {
     }
 
     private static byte[] getAccessSecret(Long userId) {
-        RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
+
         String redis_refreshToken = redisTemplate.opsForValue().get(TOKEN_KEY + userId);
         Assert.isTrue(StrUtil.isNotBlank(redis_refreshToken), "Token已过期");
         String last5Chars = redis_refreshToken.substring(redis_refreshToken.length() - 5);
@@ -41,7 +45,6 @@ public class JwtUtil {
      * @return 过期时间-单位天
      */
     private static int getRefreshExp() {
-        SysParamsService sysParamsService = SpringUtil.getBean(SysParamsService.class);
         String refreshExp =  sysParamsService.getValue("jwt.exp", true);
         return Integer.parseInt(refreshExp);
     }
@@ -76,7 +79,6 @@ public class JwtUtil {
         payload.put("userId", userId);
         payload.put("type", "refresh");
         String refreshToken = JWTUtil.createToken(payload, getRefreshJwtSecret());
-        RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
         redisTemplate.opsForValue().set(TOKEN_KEY+userId, refreshToken, getRefreshExp(), TimeUnit.DAYS);
         //redisTemplate.opsForValue().set(TOKEN_KEY+userId,refreshToken, 2, TimeUnit.MINUTES);//测试使用
         return refreshToken;
@@ -90,7 +92,6 @@ public class JwtUtil {
         Assert.isTrue(ObjectUtil.equals("refresh", jwt.getPayload("type")), "非法Token错误");
 
         Long userId = Convert.toLong(jwt.getPayload("userId"));
-        RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
         String redis_refreshToken = redisTemplate.opsForValue().get(TOKEN_KEY + userId);
         Assert.isTrue(ObjectUtil.equals(redis_refreshToken, refreshToken), "Token已过期");
 
@@ -115,7 +116,6 @@ public class JwtUtil {
         JWT jwt = JWTUtil.parseToken(refreshToken);
         Assert.isTrue(ObjectUtil.equals("refresh", jwt.getPayload("type")), "非法Token错误");
         Long userId = Convert.toLong(jwt.getPayload("userId"));
-        RedisTemplate<String, String> redisTemplate = SpringUtil.getBean("redisTemplate", RedisTemplate.class);
 
         long expire = redisTemplate.getExpire(TOKEN_KEY + userId, TimeUnit.DAYS);
         Assert.isTrue(expire >= 0, "Token已过期");
