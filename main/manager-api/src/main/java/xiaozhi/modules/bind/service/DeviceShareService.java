@@ -15,5 +15,5 @@ public interface DeviceShareService extends IService<DeviceShareEntity> {
 
     public  void shareDevice(DeviceShareDto deviceShareDto);
 
-    List<JSONObject> getAgentList();
+    List<JSONObject> getAgentList(String agentId);
 }

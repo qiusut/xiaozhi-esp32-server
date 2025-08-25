@@ -124,7 +124,7 @@ public class TbDeviceServiceImpl extends ServiceImpl<TbDeviceDao, TbDeviceEntity
 
         LambdaQueryWrapper<TbDeviceEntity> queryWrapper = Wrappers.lambdaQuery();
         List<String> finalDeviceIds = deviceIds;
-        queryWrapper.or(i -> {
+        queryWrapper.and(i -> {
                     i.in(CollUtil.isNotEmpty(finalDeviceIds),TbDeviceEntity::getId, finalDeviceIds);
                     i.or().eq(TbDeviceEntity::getUserId, userId);
                 }

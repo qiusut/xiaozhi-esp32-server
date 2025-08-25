@@ -2,7 +2,9 @@ package xiaozhi.modules.device.controller;
 
 import java.util.List;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.shiro.authz.annotation.RequiresPermissions;
@@ -25,6 +27,8 @@ import xiaozhi.common.redis.RedisKeys;
 import xiaozhi.common.redis.RedisUtils;
 import xiaozhi.common.user.UserDetail;
 import xiaozhi.common.utils.Result;
+import xiaozhi.common.utils.ResultUtils;
+import xiaozhi.modules.bind.model.vo.AiDeviceVo;
 import xiaozhi.modules.device.dto.DeviceRegisterDTO;
 import xiaozhi.modules.device.dto.DeviceUnBindDTO;
 import xiaozhi.modules.device.dto.DeviceUpdateDTO;
@@ -126,8 +130,10 @@ public class DeviceController {
     @GetMapping("/{deviceId}")
     @Operation(summary = "获取设备详情")
     //@RequiresPermissions("sys:role:normal")
-    public Result<DeviceEntity> getDeviceView(@PathVariable String deviceId) {
+    public Result<AiDeviceVo> getDeviceView(@PathVariable String deviceId) {
         DeviceEntity entity = deviceService.selectById(deviceId);
-        return new Result<DeviceEntity>().ok(entity);
+        AiDeviceVo vo = BeanUtil.copyProperties(entity, AiDeviceVo.class);
+        vo.setIsShare(!ObjectUtil.equals(entity.getUserId(), SecurityUser.getUser().getId()));
+        return ResultUtils.success(vo);
     }
 }

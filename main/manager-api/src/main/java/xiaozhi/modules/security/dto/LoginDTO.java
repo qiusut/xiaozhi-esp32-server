@@ -36,4 +36,8 @@ public class LoginDTO implements Serializable {
     @NotBlank(message = "{sysuser.uuid.require}")
     private String captchaId;
 
+    @Schema(description = "登入设备,app,pc")
+    @NotBlank(message = "{sysuser.loginDevice.require}")
+    private String loginDevice;
+
 }

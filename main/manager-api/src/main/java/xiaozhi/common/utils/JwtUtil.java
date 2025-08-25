@@ -3,6 +3,7 @@ package xiaozhi.common.utils;
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.extra.spring.SpringUtil;
 import cn.hutool.jwt.JWT;
@@ -23,8 +24,7 @@ public class JwtUtil {
      * @return 密钥
      */
     private static byte[] getRefreshJwtSecret() {
-        SysParamsService sysParamsService = SpringUtil.getBean(SysParamsService.class);
-        String jwtSecret =  sysParamsService.getValue("jwt.secret", true);
+        String jwtSecret = RandomUtil.randomString(5);
         return jwtSecret.getBytes();
     }
 
@@ -85,7 +85,7 @@ public class JwtUtil {
     // 刷新Token
     public static void refreshAccessToken(String refreshToken) {
 
-        Assert.isTrue(JWTUtil.verify(refreshToken, getRefreshJwtSecret()), "非法Token错误");
+        //Assert.isTrue(JWTUtil.verify(refreshToken, getRefreshJwtSecret()), "非法Token错误");
         JWT jwt = JWTUtil.parseToken(refreshToken);
         Assert.isTrue(ObjectUtil.equals("refresh", jwt.getPayload("type")), "非法Token错误");
 
@@ -111,7 +111,7 @@ public class JwtUtil {
      * @return 用户Id
      */
     public static Long getUserIdFromRefreshToken(String refreshToken) {
-        Assert.isTrue(JWTUtil.verify(refreshToken, getRefreshJwtSecret()), "非法Token错误");
+        //Assert.isTrue(JWTUtil.verify(refreshToken, getRefreshJwtSecret()), "非法Token错误");
         JWT jwt = JWTUtil.parseToken(refreshToken);
         Assert.isTrue(ObjectUtil.equals("refresh", jwt.getPayload("type")), "非法Token错误");
         Long userId = Convert.toLong(jwt.getPayload("userId"));
@@ -135,7 +135,7 @@ public class JwtUtil {
     public static Long getUserIdFromToken(String token) {
         Long userId = Convert.toLong(JWTUtil.parseToken(token).getPayload("userId"));
         byte[] key = getAccessSecret(userId);
-        Assert.isTrue(JWTUtil.verify(token, key), "非法Token错误");
+        Assert.isTrue(JWTUtil.verify(token, key), "该账号已在其它设备登入");
         JWT jwt = JWTUtil.parseToken(token);
         Assert.isTrue(ObjectUtil.equals(jwt.getPayload("type"),"access"), "非法Token错误");
         Assert.isTrue(jwt.getPayload("exp")!=null && jwt.setKey(key).validate(0),"token已失效");

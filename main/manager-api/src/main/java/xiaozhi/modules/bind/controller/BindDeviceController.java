@@ -38,7 +38,7 @@ public class BindDeviceController {
     @GetMapping("/agentList")
     @Operation(summary = "获取当前用户的所有智能体")
     public Result<List<JSONObject>> agentList(@RequestParam(required = false) String agentId) {
-        List<JSONObject> agentEntityList = deviceShareService.getAgentList();
+        List<JSONObject> agentEntityList = deviceShareService.getAgentList(agentId);
         return ResultUtils.success(agentEntityList);
     }
 

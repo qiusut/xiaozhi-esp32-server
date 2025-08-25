@@ -70,7 +70,7 @@ public class IotWsServiceImpl implements IotWsService {
                 .eq(AgentEntity::getUserId, user.getId())
         );*/
 
-        List<JSONObject> agents = deviceShareService.getAgentList();
+        List<JSONObject> agents = deviceShareService.getAgentList(agentId);
 
         if (CollectionUtil.isNotEmpty(agents)) {
             Map<String, String> nameMap = agents.stream().collect(Collectors.toMap(
@@ -88,9 +88,10 @@ public class IotWsServiceImpl implements IotWsService {
 
             LambdaQueryWrapper<DeviceEntity> queryWrapper = Wrappers.lambdaQuery();
             List<String> finalDeviceIds = deviceIds;
-            queryWrapper.or(i -> i.and(j -> j.eq(DeviceEntity::getUserId, user.getId()).in(DeviceEntity::getAgentId, nameMap.keySet()))
+            queryWrapper.and(i -> i.and(j -> j.eq(DeviceEntity::getUserId, user.getId()).in(DeviceEntity::getAgentId, nameMap.keySet()))
                     .or().in(CollUtil.isNotEmpty(finalDeviceIds),DeviceEntity::getId, finalDeviceIds)
             );
+            queryWrapper.eq(StrUtil.isNotBlank(agentId),DeviceEntity::getAgentId, agentId);
             queryWrapper.orderByAsc(DeviceEntity::getAgentId, DeviceEntity::getSort);
             List<DeviceEntity> deviceList = deviceDao.selectList(queryWrapper);
 

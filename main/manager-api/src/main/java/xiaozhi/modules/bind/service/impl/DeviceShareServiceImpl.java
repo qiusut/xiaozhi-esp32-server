@@ -90,14 +90,18 @@ public class DeviceShareServiceImpl extends ServiceImpl<DeviceShareDao, DeviceSh
     }
 
     @Override
-    public List<JSONObject> getAgentList() {
+    public List<JSONObject> getAgentList(String agentId) {
         List<JSONObject> agentJsonList = new ArrayList<>();
         Long userId = SecurityUser.getUserId();
         List<String> agentIds = new ArrayList<>();
         List<DeviceShareEntity> list = this.list(Wrappers.lambdaQuery(DeviceShareEntity.class).eq(DeviceShareEntity::getUserId, userId));
         if(CollUtil.isNotEmpty(list)){
             List<String> deviceIds = list.stream().map(DeviceShareEntity::getDeviceId).toList();
-            List<String> agentEntities = deviceDao.selectObjs(Wrappers.lambdaQuery(DeviceEntity.class).select(DeviceEntity::getAgentId).in(DeviceEntity::getId, deviceIds));
+            List<String> agentEntities = deviceDao.selectObjs(Wrappers.lambdaQuery(DeviceEntity.class)
+                    .select(DeviceEntity::getAgentId)
+                    .eq(StrUtil.isNotBlank(agentId), DeviceEntity::getAgentId, agentId)
+                    .in(DeviceEntity::getId, deviceIds)
+            );
             if(CollUtil.isNotEmpty(agentEntities)){
                 agentIds = agentEntities.stream().distinct().toList();
             }
