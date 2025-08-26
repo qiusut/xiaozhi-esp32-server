@@ -1,14 +1,10 @@
 package xiaozhi.modules.security.controller;
 
 import java.io.IOException;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +41,6 @@ import xiaozhi.modules.sys.service.SysParamsService;
 import xiaozhi.modules.sys.service.SysUserPlusService;
 import xiaozhi.modules.sys.service.SysUserService;
 import xiaozhi.modules.sys.vo.SysDictDataItem;
-import xiaozhi.modules.sys.vo.SysUserVO;
 
 /**
  * 登录控制层
@@ -116,9 +111,10 @@ public class LoginController {
             throw new RenException("请检测用户和密码是否输入错误");
         }
 
+        Assert.isTrue(Arrays.asList("app","pc").contains(login.getLoginDevice()),"登入设备不支持");
         TokenDTO tokenDTO = new TokenDTO();
-        tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(user.getId()));
-        tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername()));
+        tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(user.getId(), login.getLoginDevice()));
+        tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername(), login.getLoginDevice()));
         tokenDTO.setClientHash(HttpContextUtils.getClientCode());
         tokenDTO.setExpire(3600);
 
@@ -130,12 +126,14 @@ public class LoginController {
     @RateLimit(key_pre = "sys:refreshToken")
     public Result<Map<String, String>> refreshToken(@RequestHeader("refreshToken") String refreshToken) {
         System.out.println("请求刷新token接口refreshToken:" + refreshToken);
-        Long userId = JwtUtil.getUserIdFromRefreshToken(refreshToken);
+        Map<String, Object> map = JwtUtil.getValueFromRefreshToken(refreshToken);
+        Long userId = (Long) map.get("userId");
+        String deviceType = map.get("deviceType").toString();
 
         SysUserEntity user = sysUserPlusService.getOne(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getId, userId));
         Assert.notNull(user, "token异常，非法登入");
 
-        return ResultUtils.success(JwtUtil.generateTokens(user.getId(),user.getUsername()));
+        return ResultUtils.success(JwtUtil.generateTokens(user.getId(),user.getUsername(),deviceType));
     }
 
     @PostMapping("/register")

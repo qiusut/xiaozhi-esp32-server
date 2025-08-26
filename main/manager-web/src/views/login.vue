@@ -115,7 +115,8 @@ export default {
         captcha: '',
         captchaId: '',
         areaCode: '+86',
-        mobile: ''
+        mobile: '',
+        loginDevice: 'pc'
       },
       captchaUuid: '',
       captchaUrl: '',
