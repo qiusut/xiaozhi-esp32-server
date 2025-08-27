@@ -17,6 +17,10 @@ public class LoginDTO implements Serializable {
     @NotBlank(message = "{sysuser.username.require}")
     private String username;
 
+    @Schema(description = "姓名")
+    @NotBlank(message = "{sysuser.realName.require}")
+    private String realName;
+
     @Schema(description = "手机号")
     @NotBlank(message = "{sysuser.mobile.require}")
     private String mobile;

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.*;
 
 import cn.hutool.core.lang.Assert;
+import cn.hutool.core.lang.Validator;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -94,12 +96,12 @@ public class LoginController {
             throw new RenException("图形验证码错误，请重新获取");
         }
 
-        // 按照用户名获取用户
-        //SysUserDTO userDTO = sysUserService.getByUsername(login.getUsername());
-
         SysUserEntity user = sysUserPlusService.getOne(Wrappers.lambdaQuery(SysUserEntity.class)
-                .eq(StrUtil.isNotBlank(login.getMobile()),SysUserEntity::getMobile, login.getMobile())
-                .eq(StrUtil.isNotBlank(login.getUsername()),SysUserEntity::getUsername, login.getUsername())
+                .and(wrapper ->
+                        wrapper.eq(StrUtil.isNotBlank(login.getMobile()),SysUserEntity::getMobile, login.getMobile())
+                                .eq(StrUtil.isNotBlank(login.getUsername()),SysUserEntity::getUsername, login.getUsername())
+                )
+                .or().eq(StrUtil.isNotBlank(login.getUsername()),SysUserEntity::getMobile, login.getUsername())
         );
 
         // 判断用户是否存在
@@ -115,6 +117,49 @@ public class LoginController {
         TokenDTO tokenDTO = new TokenDTO();
         tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(user.getId(), login.getLoginDevice()));
         tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername(), login.getLoginDevice()));
+        tokenDTO.setClientHash(HttpContextUtils.getClientCode());
+        tokenDTO.setExpire(3600);
+
+        return new Result<TokenDTO>().ok(tokenDTO);
+    }
+
+    @PostMapping("/captchaLogin")
+    @Operation(summary = "手机验证码登录")
+    public Result<TokenDTO> captchaLogin(@RequestBody Map<String, String>  params) {
+
+        String mobile = params.get("mobile");
+        String loginDevice = params.get("loginDevice");
+        String mobileCaptcha = params.get("mobileCaptcha");
+        //String captchaId = params.get("captchaId");
+
+        Assert.isTrue(StrUtil.isNotBlank(mobile)&&StrUtil.isNotBlank(mobileCaptcha), "手机号或验证码不能为空");
+        // 验证是否正确输入验证码
+        /*boolean validate = captchaService.validate(captchaId, captcha, true);
+        if (!validate) {
+            throw new RenException("图形验证码错误，请重新获取");
+        }*/
+
+        // 验证用户是否是手机号码
+        boolean validPhone = Validator.isMobile(mobile);
+        if (!validPhone) {
+            throw new RenException("手机号码格式不正确，请重新输入");
+        }
+        // 验证短信验证码是否正常
+        if (!captchaService.validateSMSValidateCode(mobile, mobileCaptcha, false)) {
+            throw new RenException("手机验证码错误，请重新获取");
+        }
+
+        SysUserEntity user = sysUserPlusService.getOne(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getMobile, mobile));
+
+        // 判断用户是否存在
+        if (user == null) {
+            throw new RenException("该手机号未注册");
+        }
+
+        Assert.isTrue(Arrays.asList("app","pc").contains(loginDevice),"登入设备不支持");
+        TokenDTO tokenDTO = new TokenDTO();
+        tokenDTO.setRefreshToken(JwtUtil.createRefreshToken(user.getId(), loginDevice));
+        tokenDTO.setToken(JwtUtil.createToken(user.getId(),user.getUsername(), loginDevice));
         tokenDTO.setClientHash(HttpContextUtils.getClientCode());
         tokenDTO.setExpire(3600);
 
@@ -148,9 +193,15 @@ public class LoginController {
         boolean validate;
         if (isMobileRegister) {
             // 验证用户是否是手机号码
-            boolean validPhone = ValidatorUtils.isValidPhone(login.getMobile());
+            boolean validPhone = Validator.isMobile(login.getMobile());
             if (!validPhone) {
                 throw new RenException("手机号码格式不正确，请重新输入");
+            }
+            if(!ObjectUtil.equals(login.getMobile(), login.getUsername())){
+                boolean validUsername = Validator.isMobile(login.getUsername());
+                if (validUsername) {
+                    throw new RenException("用户名不能为手机号");
+                }
             }
             // 验证短信验证码是否正常
             validate = captchaService.validateSMSValidateCode(login.getMobile(), login.getMobileCaptcha(), false);
@@ -170,6 +221,7 @@ public class LoginController {
         Assert.isFalse(sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getMobile, login.getMobile())), "此手机号码已被注册");
         SysUserDTO userDTO = new SysUserDTO();
         userDTO.setUsername(login.getUsername());
+        userDTO.setRealName(login.getRealName());
         userDTO.setMobile(login.getMobile());
         userDTO.setPassword(login.getPassword());
         sysUserService.save(userDTO);
@@ -207,7 +259,7 @@ public class LoginController {
         // 判断非空
         ValidatorUtils.validateEntity(dto);
         // 验证用户是否是手机号码
-        boolean validPhone = ValidatorUtils.isValidPhone(dto.getPhone());
+        boolean validPhone = Validator.isMobile(dto.getPhone());
         if (!validPhone) {
             throw new RenException("输入的手机号码格式不正确");
         }
