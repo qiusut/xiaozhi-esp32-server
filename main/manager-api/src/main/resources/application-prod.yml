@@ -64,7 +64,7 @@ dromara:
         enable-storage: true  # 启用存储
         access-key: xxxxx
         secret-key: xxxxx
-        end-point: http://192.168.1.68:9090
-        bucket-name: xiaozhi
+        end-point: http://192.168.1.68:9010
+        bucket-name: xxxxx
         domain: # 访问域名，注意“/”结尾，例如：http://minio.abc.com/abc/
         base-path: /prod/ # 基础路径
