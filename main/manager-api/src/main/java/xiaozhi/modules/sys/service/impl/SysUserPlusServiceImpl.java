@@ -12,9 +12,12 @@ import xiaozhi.common.page.PageData;
 import xiaozhi.modules.device.dao.DeviceDao;
 import xiaozhi.modules.device.entity.DeviceEntity;
 import xiaozhi.modules.sys.dao.SysUserDao;
+import xiaozhi.modules.sys.dao.SysUserRoleDao;
 import xiaozhi.modules.sys.entity.SysUserEntity;
+import xiaozhi.modules.sys.entity.SysUserRoleEntity;
 import xiaozhi.modules.sys.query.SysUserQuery;
 import xiaozhi.modules.sys.service.SysUserPlusService;
+import xiaozhi.modules.sys.service.SysUserRoleService;
 import xiaozhi.modules.sys.vo.SysUserVO;
 import xiaozhi.modules.tb.dao.TbDeviceDao;
 import xiaozhi.modules.tb.entity.TbDeviceEntity;
@@ -34,6 +37,9 @@ public class SysUserPlusServiceImpl extends ServiceImpl<SysUserDao, SysUserEntit
     @Resource
     private TbDeviceDao tbDeviceDao;
 
+    @Resource
+    private SysUserRoleDao sysUserRoleDao;
+
     @Override
     public PageData<SysUserVO> page(SysUserQuery query) {
         Page<SysUserEntity> page = Page.of(query.getPage(), query.getLimit());
@@ -45,6 +51,7 @@ public class SysUserPlusServiceImpl extends ServiceImpl<SysUserDao, SysUserEntit
             List<Long> userIds = page.getRecords().stream().map(SysUserEntity::getId).toList();
             Map<Long, Integer> deviceCountMap = new HashMap<>();
             Map<Long, Integer> tbDeviceCountMap = new HashMap<>();
+            Map<Long, List<Long>> roleIdsMap = new HashMap<>();
             List<DeviceEntity> deviceEntityList = deviceDao.selectList(Wrappers.lambdaQuery(DeviceEntity.class).in(DeviceEntity::getUserId, userIds));
             if(CollUtil.isNotEmpty(deviceEntityList)){
                 deviceCountMap = deviceEntityList.stream()
@@ -65,11 +72,25 @@ public class SysUserPlusServiceImpl extends ServiceImpl<SysUserDao, SysUserEntit
                         ));
 
             }
+
+            List<SysUserRoleEntity> roleEntities = sysUserRoleDao.selectList(Wrappers.lambdaQuery(SysUserRoleEntity.class)
+                    .in(SysUserRoleEntity::getUserId, userIds));
+            if(CollUtil.isNotEmpty(roleEntities)){
+                roleIdsMap = roleEntities.stream()
+                        .collect(Collectors.groupingBy(
+                                SysUserRoleEntity::getUserId,
+                                Collectors.mapping(SysUserRoleEntity::getRoleId, Collectors.toList())
+                        ));
+            }
+
             for (SysUserEntity sysUserEntity : page.getRecords()) {
                 SysUserVO sysUserVO = new SysUserVO();
                 BeanUtil.copyProperties(sysUserEntity, sysUserVO);
                 sysUserVO.setDeviceCount(deviceCountMap.getOrDefault(sysUserEntity.getId(), 0));
                 sysUserVO.setTbDeviceCount(tbDeviceCountMap.getOrDefault(sysUserEntity.getId(), 0));
+                if(CollUtil.isNotEmpty(roleIdsMap.get(sysUserEntity.getId()))){
+                    sysUserVO.setRoleIdList(roleIdsMap.get(sysUserEntity.getId()).stream().distinct().toList());
+                }
                 sysUserVOList.add(sysUserVO);
             }
         }
