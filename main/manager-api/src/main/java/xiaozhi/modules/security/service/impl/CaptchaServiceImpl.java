@@ -131,7 +131,11 @@ public class CaptchaServiceImpl implements CaptchaService {
     @Override
     public boolean validateSMSValidateCode(String phone, String code, Boolean delete) {
         String key = RedisKeys.getSMSValidateCodeKey(phone);
-        return validate(key, code, delete);
+        boolean valid = validate(key, code, delete);
+        if(valid){
+            redisUtils.delete(RedisKeys.getSMSLastSendTimeKey(phone));
+        }
+        return valid;
     }
 
     /**

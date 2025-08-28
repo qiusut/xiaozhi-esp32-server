@@ -145,7 +145,7 @@ public class LoginController {
             throw new RenException("手机号码格式不正确，请重新输入");
         }
         // 验证短信验证码是否正常
-        if (!captchaService.validateSMSValidateCode(mobile, mobileCaptcha, false)) {
+        if (!captchaService.validateSMSValidateCode(mobile, mobileCaptcha, true)) {
             throw new RenException("手机验证码错误，请重新获取");
         }
 
@@ -204,7 +204,7 @@ public class LoginController {
                 }
             }
             // 验证短信验证码是否正常
-            validate = captchaService.validateSMSValidateCode(login.getMobile(), login.getMobileCaptcha(), false);
+            validate = captchaService.validateSMSValidateCode(login.getMobile(), login.getMobileCaptcha(), true);
             if (!validate) {
                 throw new RenException("手机验证码错误，请重新获取");
             }
@@ -270,7 +270,7 @@ public class LoginController {
             throw new RenException("输入的手机号码未注册");
         }
         // 验证短信验证码是否正常
-        boolean validate = captchaService.validateSMSValidateCode(dto.getPhone(), dto.getCode(), false);
+        boolean validate = captchaService.validateSMSValidateCode(dto.getPhone(), dto.getCode(), true);
         // 判断是否通过验证
         if (!validate) {
             throw new RenException("输入的手机验证码错误");

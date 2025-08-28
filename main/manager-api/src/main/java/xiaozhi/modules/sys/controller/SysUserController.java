@@ -124,7 +124,7 @@ public class SysUserController {
     @Operation(summary = "校验自身验证码")
     public Result<Boolean> captchaLogin(@RequestParam String captcha) {
         UserDetail user = SecurityUser.getUser();
-        boolean valid = captchaService.validateSMSValidateCode(user.getMobile(), captcha, false);
+        boolean valid = captchaService.validateSMSValidateCode(user.getMobile(), captcha, true);
         return ResultUtils.success(valid);
     }
 
@@ -147,7 +147,7 @@ public class SysUserController {
                                         @RequestParam String captcha) {
         UserDetail user = SecurityUser.getUser();
         Assert.isFalse(ObjectUtil.equals(mobile, user.getMobile()), "手机号不能与原手机号相同!");
-        boolean valid = captchaService.validateSMSValidateCode(mobile, captcha, false);
+        boolean valid = captchaService.validateSMSValidateCode(mobile, captcha, true);
         Assert.isTrue(valid, "验证码错误!");
         boolean exists = sysUserPlusService.exists(Wrappers.lambdaQuery(SysUserEntity.class).eq(SysUserEntity::getMobile, mobile));
         Assert.isFalse(exists, "此手机号码已被绑定!");
