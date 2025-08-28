@@ -10,6 +10,7 @@ from core.handle.reportHandle import enqueue_asr_report
 import asyncio
 
 from core.providers.tts.dto.dto import ContentType
+from core.handle.sendAudioHandle import send_stt_message, send_tts_message
 
 TAG = __name__
 
