@@ -7,7 +7,7 @@ from core.providers.tts.dto.dto import ContentType
 
 
 class ReadTextMessageHandler(TextMessageHandler):
-    """Read消息处理器"""
+    """read消息处理器"""
 
     @property
     def message_type(self) -> TextMessageType:
